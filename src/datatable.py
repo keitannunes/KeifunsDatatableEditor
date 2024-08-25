@@ -7,9 +7,9 @@ import os
 class Song:
     id: str = ""
     uniqueId: int = 0
-    songNameList: List[str] = field(default_factory=lambda: ['', '', '', ''])
-    songSubList: List[str] = field(default_factory=lambda: ['', '', '', ''])
-    songDetailList: List[str] = field(default_factory=lambda: ['', '', '', ''])
+    songNameList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
+    songSubList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
+    songDetailList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
     genreNo: int = 0
     songFileName: str = ""
     new: bool = False
@@ -194,10 +194,11 @@ class WordlistItem:
     englishUsFontType: int = 0
     chineseTText: str = ""
     chineseTFontType: int = 0
-    koreanText: str = ""
-    koreanFontType: int = 0
     chineseSText: str = ""
     chineseSFontType: int = 0
+    koreanText: str = ""
+    koreanFontType: int = 0
+
 
 class Datatable:
     filepath: str
@@ -301,9 +302,9 @@ class Datatable:
         return Song(
             id,
             musicinfo_item.uniqueId,
-            [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseSText, wordlist_name_item.koreanText],
-            [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseSText, wordlist_sub_item.koreanText],
-            [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseSText, wordlist_detail_item.koreanText],
+            [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.chineseSText, wordlist_name_item.koreanText],
+            [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.chineseSText, wordlist_sub_item.koreanText],
+            [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.chineseSText, wordlist_detail_item.koreanText],
             musicinfo_item.genreNo,
             musicinfo_item.songFileName,
             music_attribute_item.new,

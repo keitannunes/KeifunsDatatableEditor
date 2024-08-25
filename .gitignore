@@ -2,3 +2,4 @@ datatable
 .vscode
 .idea
 config.json
+__pycache__

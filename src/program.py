@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import ttk
+import datatable as dt
+from tkinter import ttk, messagebox
 from typing import List
 
 GENRE_MAPPING = {
@@ -13,12 +14,17 @@ GENRE_MAPPING = {
     "クラシック": 7,
 }
 
-class Ui:
+class Program:
     window: tk.Tk
     frame: tk.Frame
 
-    #Grids
+    menu_bar: tk.Menu
+    file_menu: tk.Menu
+    help_menu: tk.Menu
+
+    #Frames
     song_details_frame: tk.LabelFrame
+    language_frame: tk.Frame
     difficulty_info_frame: tk.LabelFrame
     difficulty_info_sub_frames: List[tk.LabelFrame]
 
@@ -46,6 +52,14 @@ class Ui:
     song_detail_entry: tk.Entry
     song_filename_entry: tk.Entry
     renda_time_entries: List[tk.Entry]
+    song_name_var: tk.StringVar
+    song_sub_var: tk.StringVar
+    song_detail_var: tk.StringVar
+    song_filename_var: tk.StringVar
+    new_var: tk.BooleanVar
+    can_play_ura_var: tk.BooleanVar
+    unique_id_var: tk.IntVar
+    genre_var: tk.StringVar
 
     #Combobox
     genre_combobox: ttk.Combobox
@@ -69,24 +83,68 @@ class Ui:
     music_order_button: tk.Button
 
     #Radio Buttons
+    language_value: tk.IntVar
+    language_radiobuttons: List[tk.Radiobutton]
     ai_sections_frames: List[tk.Frame]
     ai_sections_radiobuttons: List[List[tk.Radiobutton]]
     ai_sections_values: List[tk.IntVar]
+
+    #Other Variables
+    current_songid: str
+    datatable: dt.Datatable
+    song_info: dt.Song
 
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("Keifun's Datatable Editor")
         #self.window.geometry("1280x720")  # Set window size to 720p
 
+        self.menu_bar = tk.Menu(self.window, tearoff=0)
+
+        #File Menu
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="Open Datatable", command=self.open_datatable)
+        self.file_menu.add_command(label="Save Datatable", command=self.save_datatable)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="New Song", command=self.new_song)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.window.quit)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+
+        #Help Menu
+        
+        self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.help_menu.add_command(label="About", command=self.show_about)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+
+        self.window.config(menu=self.menu_bar)
+
         self.songid_label = tk.Label(self.window, text="Song Id:")
         self.songid_entry = tk.Entry(self.window)
 
         self.songid_label.grid(row=0, column=0)
         self.songid_entry.grid(row=1, column=0)
+
+        self.songid_entry.bind("<Return>", self.on_songid)
+        self.songid_entry.bind("<FocusOut>", self.on_songid)
+
         
         ### Song Details ###
+        self.language_frame = tk.Frame(self.window, pady=5)
+
+        self.language_radiobuttons = list()
+        self.language_value = tk.IntVar()
+        self.language_value.set(0)
+        self.language_value.trace_add("write", self.on_language_change)
+
+        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'zh-CN', 'ko']):
+            self.language_radiobuttons.append(tk.Radiobutton(self.language_frame, text=lang, variable=self.language_value, value=i))
+            self.language_radiobuttons[i].grid(row=0, column=i)
+
+        self.language_frame.grid(row=2, column=0)
+        
         self.song_details_frame = tk.LabelFrame(self.window, text="Song Details", padx=20, pady=20)
-        self.song_details_frame.grid(row=2, column=0)
+        self.song_details_frame.grid(row=3, column=0)
 
         #Set Labels
         self.song_name_label = tk.Label(self.song_details_frame, text="Song Name:", anchor="w", width=20)
@@ -102,28 +160,46 @@ class Ui:
         self.song_filename_label = tk.Label(self.song_details_frame, text="Song Filename:", anchor="w", width=20)
         self.song_filename_label.grid(row=0, column=1)
 
-        #Set Entries
-        self.song_name_entry = tk.Entry(self.song_details_frame)
+        # Create variables for each widget
+        self.song_name_var = tk.StringVar()
+        self.song_sub_var = tk.StringVar()
+        self.song_detail_var = tk.StringVar()
+        self.song_filename_var = tk.StringVar()
+        self.new_var = tk.BooleanVar()
+        self.can_play_ura_var = tk.BooleanVar()
+        self.unique_id_var = tk.IntVar()
+        self.genre_var = tk.StringVar()
+
+        # Entry widgets bound to StringVar
+        self.song_name_entry = tk.Entry(self.song_details_frame, textvariable=self.song_name_var)
         self.song_name_entry.grid(row=1, column=0)
-        self.song_sub_entry = tk.Entry(self.song_details_frame)
+
+        self.song_sub_entry = tk.Entry(self.song_details_frame, textvariable=self.song_sub_var)
         self.song_sub_entry.grid(row=3, column=0)
-        self.song_detail_entry = tk.Entry(self.song_details_frame)
+
+        self.song_detail_entry = tk.Entry(self.song_details_frame, textvariable=self.song_detail_var)
         self.song_detail_entry.grid(row=5, column=0)
-        self.song_filename_entry = tk.Entry(self.song_details_frame)
+
+        self.song_filename_entry = tk.Entry(self.song_details_frame, textvariable=self.song_filename_var)
         self.song_filename_entry.grid(row=1, column=1)
-        self.new_checkbutton = tk.Checkbutton(self.song_details_frame, text="New")
+
+        # Checkbutton widgets bound to BooleanVar
+        self.new_checkbutton = tk.Checkbutton(self.song_details_frame, text="New", variable=self.new_var)
         self.new_checkbutton.grid(row=2, column=1)
-        self.can_play_ura_checkbutton = tk.Checkbutton(self.song_details_frame, text="Ura Playable")
+
+        self.can_play_ura_checkbutton = tk.Checkbutton(self.song_details_frame, text="Ura Playable", variable=self.can_play_ura_var)
         self.can_play_ura_checkbutton.grid(row=3, column=1)
+
+        # Button (no variable needed, as it’s an action trigger)
         self.music_order_button = tk.Button(self.song_details_frame, text="Set Music Order")
         self.music_order_button.grid(row=4, column=1)
 
-        #Set Spinbox
-        self.unique_id_spinbox = tk.Spinbox(self.song_details_frame, from_=0, to=9999)
-        self.unique_id_spinbox.grid(row=7, column = 0)
-        
-        #Set Combobox
-        self.genre_combobox = ttk.Combobox(self.song_details_frame, values=list(GENRE_MAPPING.keys()))
+        # Spinbox widget bound to IntVar
+        self.unique_id_spinbox = tk.Spinbox(self.song_details_frame, from_=0, to=9999, textvariable=self.unique_id_var)
+        self.unique_id_spinbox.grid(row=7, column=0)
+
+        # Combobox widget bound to StringVar
+        self.genre_combobox = ttk.Combobox(self.song_details_frame, values=list(GENRE_MAPPING.keys()), textvariable=self.genre_var)
         self.genre_combobox.grid(row=9, column=0)
         
 
@@ -135,7 +211,7 @@ class Ui:
 
         ### Difficulty Info ###
         self.difficulty_info_frame = tk.LabelFrame(self.window, text="Difficulty Info", padx=20, pady=20)
-        self.difficulty_info_frame.grid(row=3, column=0)
+        self.difficulty_info_frame.grid(row=4, column=0)
         self.difficulty_info_sub_frames = [
             tk.LabelFrame(self.difficulty_info_frame, text="Easy", padx=10, pady=10),
             tk.LabelFrame(self.difficulty_info_frame, text="Normal", padx=10, pady=10),
@@ -220,11 +296,63 @@ class Ui:
 
             for widget in self.difficulty_info_sub_frames[i].winfo_children():
                 widget.grid_configure(padx=5, pady=1)
+
+        self.current_songid = ''
+        self.datatable = dt.Datatable('C:\\Users\\knunes\\Downloads\\out\\KeifunsDatatableEditor\\datatable') #TODO: Variable dt
+
             
 
     def run(self):
         self.window.mainloop()
 
+    def save_datatable(self):
+        pass
+
+    def open_datatable(self):
+        pass
+
+    def new_song(self):
+        pass
+
+    def show_about(self):
+        pass
+
+    def on_songid(self, event: tk.Event):
+        if event.widget.get() == self.current_songid: return
+        self.current_songid = event.widget.get()
+        self.populate_ui()
+    
+    def on_language_change(self, *args):
+        self.poplate_wordlist_vars()
+
+    def populate_ui(self):
+        try:
+            self.song_info = self.datatable.get_song_info(self.current_songid)
+        except Exception:
+            messagebox.showerror('Song Load Error', f"Songid {self.current_songid} not found")
+        
+        self.poplate_wordlist_vars()
+        self.unique_id_var.set(self.song_info.uniqueId)
+        self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)
+        self.song_filename_var.set(self.song_info.songFileName)
+        self.new_var.set(self.song_info.new)
+        self.can_play_ura_var.set(self.song_info.ura)
+
+    def poplate_wordlist_vars(self):
+        self.song_name_var.set(self.song_info.songNameList[self.language_value.get()])
+        self.song_sub_var.set(self.song_info.songSubList[self.language_value.get()])
+        self.song_detail_var.set(self.song_info.songDetailList[self.language_value.get()])
+
+        
+        
+        
+
+
+            
+
+        
+
+
 if __name__ == "__main__":
-    ui = Ui()
+    ui = Program()
     ui.run()
