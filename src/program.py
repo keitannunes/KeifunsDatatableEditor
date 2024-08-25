@@ -1,6 +1,7 @@
 import tkinter as tk
 import datatable as dt
 from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
 from typing import List
 
 GENRE_MAPPING = {
@@ -52,6 +53,7 @@ class Program:
     song_detail_entry: tk.Entry
     song_filename_entry: tk.Entry
     renda_time_entries: List[tk.Entry]
+    renda_time_values: List[tk.StringVar]
     song_name_var: tk.StringVar
     song_sub_var: tk.StringVar
     song_detail_var: tk.StringVar
@@ -68,16 +70,23 @@ class Program:
     #Spinbox
     unique_id_spinbox: tk.Spinbox
     star_spinboxes: List[tk.Spinbox]
+    star_values: List[tk.IntVar]
     shinuchi_spinboxes: List[tk.Spinbox]
+    shinuchi_values: List[tk.IntVar]
     shinuchi_score_spinboxes: List[tk.Spinbox]
+    shinuchi_score_values: List[tk.IntVar]
     onpu_num_spinboxes: List[tk.Spinbox]
+    onpu_num_values: List[tk.IntVar]
     fuusen_total_spinboxes: List[tk.Spinbox]
+    fuusen_total_values: List[tk.IntVar]
 
     #Checkbutton
     new_checkbutton: tk.Checkbutton
     can_play_ura_checkbutton: tk.Checkbutton
     branch_checkbuttons: List[tk.Checkbutton]
-    ai_hard_checkbuttons: List[tk.Checkbutton] 
+    branch_values: List[tk.BooleanVar]
+    ai_hard_checkbuttons: List[tk.Checkbutton]
+    ai_hard_values: List[tk.BooleanVar] 
 
     #Button
     music_order_button: tk.Button
@@ -98,6 +107,12 @@ class Program:
         self.window = tk.Tk()
         self.window.title("Keifun's Datatable Editor")
         #self.window.geometry("1280x720")  # Set window size to 720p
+
+        img = Image.open("src/assets/icon.png")  # Replace with the path to your .png file
+        icon = ImageTk.PhotoImage(img)
+
+        # Set the window icon
+        self.window.wm_iconphoto(False, icon) # type: ignore
 
         self.menu_bar = tk.Menu(self.window, tearoff=0)
 
@@ -229,12 +244,19 @@ class Program:
         self.ai_sections_labels = list()
 
         self.branch_checkbuttons = list()
+        self.branch_values =  [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
         self.star_spinboxes = list()
+        self.star_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.shinuchi_spinboxes = list()
+        self.shinuchi_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.shinuchi_score_spinboxes = list()
+        self.shinuchi_score_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.onpu_num_spinboxes = list()
+        self.onpu_num_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.renda_time_entries = list()
+        self.renda_time_values =  [tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()]
         self.fuusen_total_spinboxes = list()
+        self.fuusen_total_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.ai_sections_comboboxes = list()
         self.ai_sections_frames = list()
         self.ai_sections_radiobuttons = list()
@@ -242,10 +264,11 @@ class Program:
         for e in self.ai_sections_values:
             e.set(3)
         self.ai_hard_checkbuttons = list()
+        self.ai_hard_values = [tk.BooleanVar(), tk.BooleanVar()]
 
         for i in range(5):
             self.difficulty_info_sub_frames[i].grid(row=0, column=i)
-
+            
             self.star_labels.append(tk.Label(self.difficulty_info_sub_frames[i], text="Star Difficulty:", anchor="w", width=20))
             self.shinuchi_labels.append(tk.Label(self.difficulty_info_sub_frames[i], text="Shinuchi:", anchor="w", width=20))
             self.shinuchi_score_labels.append(tk.Label(self.difficulty_info_sub_frames[i], text="Shinuchi Score:", anchor="w", width=20))
@@ -262,13 +285,13 @@ class Program:
             self.fuusen_total_labels[i].grid(row=11, column=0)
             self.ai_sections_labels[i].grid(row=13, column=0)
 
-            self.branch_checkbuttons.append(tk.Checkbutton(self.difficulty_info_sub_frames[i], text="Branch", width=20, anchor='w')) 
-            self.star_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=10))
-            self.shinuchi_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999))
-            self.shinuchi_score_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999))
-            self.onpu_num_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=99999999))
-            self.renda_time_entries.append(tk.Entry(self.difficulty_info_sub_frames[i]))
-            self.fuusen_total_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=99999999))
+            self.branch_checkbuttons.append(tk.Checkbutton(self.difficulty_info_sub_frames[i], text="Branch", variable=self.branch_values[i], width=20, anchor='w')) 
+            self.star_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=10, textvariable=self.star_values[i]))
+            self.shinuchi_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_values[i]))
+            self.shinuchi_score_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_score_values[i]))
+            self.onpu_num_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=99999999, textvariable=self.onpu_num_values[i]))
+            self.renda_time_entries.append(tk.Entry(self.difficulty_info_sub_frames[i], textvariable=self.renda_time_values[i]))
+            self.fuusen_total_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], textvariable=self.fuusen_total_values[i], from_=0, to=99999999))
             #self.ai_sections_comboboxes.append(ttk.Combobox(self.difficulty_info_sub_frames[i], values=['3','5']))
             self.ai_sections_frames.append(tk.Frame(self.difficulty_info_sub_frames[i]))
             self.ai_sections_radiobuttons.append(
@@ -279,7 +302,7 @@ class Program:
             )
 
             if i >= 3:
-                self.ai_hard_checkbuttons.append(tk.Checkbutton(self.ai_sections_frames[i], text="Hard"))
+                self.ai_hard_checkbuttons.append(tk.Checkbutton(self.ai_sections_frames[i], text="Hard", variable=self.ai_hard_values[i-3]))
                 self.ai_hard_checkbuttons[i-3].grid(row=0, column=3)
 
             self.branch_checkbuttons[i].grid(row=0, column=0)
@@ -319,18 +342,22 @@ class Program:
 
     def on_songid(self, event: tk.Event):
         if event.widget.get() == self.current_songid: return
+        old_songid = self.current_songid
         self.current_songid = event.widget.get()
-        self.populate_ui()
+        try:
+            self.populate_ui()
+        except Exception:
+            messagebox.showerror('Song Load Error', f"Songid {self.current_songid} not found")
+            self.current_songid = old_songid
+            self.songid_entry.delete(0, tk.END)
+            self.songid_entry.insert(0, old_songid)
     
     def on_language_change(self, *args):
         self.poplate_wordlist_vars()
 
     def populate_ui(self):
-        try:
-            self.song_info = self.datatable.get_song_info(self.current_songid)
-        except Exception:
-            messagebox.showerror('Song Load Error', f"Songid {self.current_songid} not found")
-        
+        self.song_info = self.datatable.get_song_info(self.current_songid)
+
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)
         self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)
@@ -338,19 +365,69 @@ class Program:
         self.new_var.set(self.song_info.new)
         self.can_play_ura_var.set(self.song_info.ura)
 
+        self.branch_values[0].set(self.song_info.branchEasy)
+        self.branch_values[1].set(self.song_info.branchNormal)
+        self.branch_values[2].set(self.song_info.branchHard)
+        self.branch_values[3].set(self.song_info.branchMania)
+        self.branch_values[4].set(self.song_info.branchUra)
+
+        self.star_values[0].set(self.song_info.starEasy)
+        self.star_values[1].set(self.song_info.starNormal)
+        self.star_values[2].set(self.song_info.starHard)
+        self.star_values[3].set(self.song_info.starMania)
+        self.star_values[4].set(self.song_info.starUra)
+
+        self.shinuchi_values[0].set(self.song_info.shinutiEasy)
+        self.shinuchi_values[1].set(self.song_info.shinutiNormal)
+        self.shinuchi_values[2].set(self.song_info.shinutiHard)
+        self.shinuchi_values[3].set(self.song_info.shinutiMania)
+        self.shinuchi_values[4].set(self.song_info.shinutiUra)
+
+        self.shinuchi_score_values[0].set(self.song_info.shinutiScoreEasy)
+        self.shinuchi_score_values[1].set(self.song_info.shinutiScoreNormal)
+        self.shinuchi_score_values[2].set(self.song_info.shinutiScoreHard)
+        self.shinuchi_score_values[3].set(self.song_info.shinutiScoreMania)
+        self.shinuchi_score_values[4].set(self.song_info.shinutiScoreUra)
+
+        self.onpu_num_values[0].set(self.song_info.easyOnpuNum)
+        self.onpu_num_values[1].set(self.song_info.normalOnpuNum)
+        self.onpu_num_values[2].set(self.song_info.hardOnpuNum)
+        self.onpu_num_values[3].set(self.song_info.maniaOnpuNum)
+        self.onpu_num_values[4].set(self.song_info.uraOnpuNum)
+
+        self.renda_time_values[0].set(str(self.song_info.rendaTimeEasy))
+        self.renda_time_values[1].set(str(self.song_info.rendaTimeNormal))
+        self.renda_time_values[2].set(str(self.song_info.rendaTimeHard))
+        self.renda_time_values[3].set(str(self.song_info.rendaTimeMania))
+        self.renda_time_values[4].set(str(self.song_info.rendaTimeUra))
+
+        self.fuusen_total_values[0].set(self.song_info.fuusenTotalEasy)
+        self.fuusen_total_values[1].set(self.song_info.fuusenTotalNormal)
+        self.fuusen_total_values[2].set(self.song_info.fuusenTotalHard)
+        self.fuusen_total_values[3].set(self.song_info.fuusenTotalMania)
+        self.fuusen_total_values[4].set(self.song_info.fuusenTotalUra)
+
+        self.ai_sections_values[0].set(self.song_info.aiEasy)
+        self.ai_sections_values[1].set(self.song_info.aiNormal)
+        self.ai_sections_values[2].set(self.song_info.aiHard)
+        self.ai_sections_values[3].set(self.song_info.aiOni)
+        self.ai_sections_values[4].set(self.song_info.aiUra)
+
+        self.ai_hard_values[0].set(self.song_info.aiOniLevel11 == "o")
+        self.ai_hard_values[1].set(self.song_info.aiUraLevel11 == "o")
+        
+        
+        
+        
+        
+        
+
+        
+
     def poplate_wordlist_vars(self):
         self.song_name_var.set(self.song_info.songNameList[self.language_value.get()])
         self.song_sub_var.set(self.song_info.songSubList[self.language_value.get()])
         self.song_detail_var.set(self.song_info.songDetailList[self.language_value.get()])
-
-        
-        
-        
-
-
-            
-
-        
 
 
 if __name__ == "__main__":
