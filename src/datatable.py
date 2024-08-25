@@ -3,6 +3,9 @@ from typing import List, Dict
 import json
 import os
 
+from dataclasses import dataclass, field
+from typing import List
+
 @dataclass
 class Song:
     id: str = ""
@@ -13,50 +16,21 @@ class Song:
     genreNo: int = 0
     songFileName: str = ""
     new: bool = False
-    ura: bool = False
-    branchEasy: bool = False
-    branchNormal: bool = False
-    branchHard: bool = False
-    branchMania: bool = False
-    branchUra: bool = False
-    starEasy: int = 0
-    starNormal: int = 0
-    starHard: int = 0
-    starMania: int = 0
-    starUra: int = 0
-    shinutiEasy: int = 0
-    shinutiNormal: int = 0
-    shinutiHard: int = 0
-    shinutiMania: int = 0
-    shinutiUra: int = 0
-    shinutiScoreEasy: int = 0
-    shinutiScoreNormal: int = 0
-    shinutiScoreHard: int = 0
-    shinutiScoreMania: int = 0
-    shinutiScoreUra: int = 0
-    easyOnpuNum: int = 0
-    normalOnpuNum: int = 0
-    hardOnpuNum: int = 0
-    maniaOnpuNum: int = 0
-    uraOnpuNum: int = 0
-    rendaTimeEasy: float = 0.0
-    rendaTimeNormal: float = 0.0
-    rendaTimeHard: float = 0.0
-    rendaTimeMania: float = 0.0
-    rendaTimeUra: float = 0.0
-    fuusenTotalEasy: int = 0
-    fuusenTotalNormal: int = 0
-    fuusenTotalHard: int = 0
-    fuusenTotalMania: int = 0
-    fuusenTotalUra: int = 0
-    aiEasy: int = 3
-    aiNormal: int = 3
-    aiHard: int = 3
-    aiOni: int = 3
-    aiUra: int = 3
+    papamama: bool = False
+
+    branch: List[bool] = field(default_factory=lambda: [False, False, False, False, False])
+    star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    shinuti: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    shinuti_score: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    onpu_num: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    renda_time: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
+    fuusen_total: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    music_ai_section: List[int] = field(default_factory=lambda: [5, 5, 5, 5, 5])
+
     aiOniLevel11: str = ""
     aiUraLevel11: str = ""
-    musicOrder: List[int] = field(default_factory=lambda: [0,-1,-1,-1,-1,-1,-1,-1])
+    musicOrder: List[int] = field(default_factory=lambda: [0, -1, -1, -1, -1, -1, -1, -1])
+
 
 @dataclass
 class DatatableIndices:
@@ -283,8 +257,8 @@ class Datatable:
 
             for field in fields(indices):
                 if getattr(indices, field.name) == -1:
-                    raise Exception(f"Could not find {id} in {field.name[:field.name.index('index')-1]}") #-1 for underscore
-            
+                    raise Exception(f"Could not find {id} in {field.name}") #-1 for underscore
+                    
             self.indices[id] = indices
         return indices
 
@@ -300,58 +274,74 @@ class Datatable:
         music_ai_section_item = self.music_ai_section[indices.music_ai_section]
         
         return Song(
-            id,
-            musicinfo_item.uniqueId,
-            [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.chineseSText, wordlist_name_item.koreanText],
-            [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.chineseSText, wordlist_sub_item.koreanText],
-            [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.chineseSText, wordlist_detail_item.koreanText],
-            musicinfo_item.genreNo,
-            musicinfo_item.songFileName,
-            music_attribute_item.new,
-            music_attribute_item.canPlayUra,
-            musicinfo_item.branchEasy,
-            musicinfo_item.branchNormal,
-            musicinfo_item.branchHard,
-            musicinfo_item.branchMania,
-            musicinfo_item.branchUra,
-            musicinfo_item.starEasy,
-            musicinfo_item.starNormal,
-            musicinfo_item.starHard,
-            musicinfo_item.starMania,
-            musicinfo_item.starUra,
-            musicinfo_item.shinutiEasy,
-            musicinfo_item.shinutiNormal,
-            musicinfo_item.shinutiHard,
-            musicinfo_item.shinutiMania,
-            musicinfo_item.shinutiUra,
-            musicinfo_item.shinutiScoreEasy,
-            musicinfo_item.shinutiScoreNormal,
-            musicinfo_item.shinutiScoreHard,
-            musicinfo_item.shinutiScoreMania,
-            musicinfo_item.shinutiScoreUra,
-            musicinfo_item.easyOnpuNum,
-            musicinfo_item.normalOnpuNum,
-            musicinfo_item.hardOnpuNum,
-            musicinfo_item.maniaOnpuNum,
-            musicinfo_item.uraOnpuNum,
-            musicinfo_item.rendaTimeEasy,
-            musicinfo_item.rendaTimeNormal,
-            musicinfo_item.rendaTimeHard,
-            musicinfo_item.rendaTimeMania,
-            musicinfo_item.rendaTimeUra,
-            musicinfo_item.fuusenTotalEasy,
-            musicinfo_item.fuusenTotalNormal,
-            musicinfo_item.fuusenTotalHard,
-            musicinfo_item.fuusenTotalMania,
-            musicinfo_item.fuusenTotalUra,
-            music_ai_section_item.easy,
-            music_ai_section_item.normal,
-            music_ai_section_item.hard,
-            music_ai_section_item.oni,
-            music_ai_section_item.ura,
-            music_ai_section_item.oniLevel11,
-            music_ai_section_item.uraLevel11,
-            [] #TODO: musicorder
+            id= id,
+            uniqueId= musicinfo_item.uniqueId,
+            songNameList= [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.koreanText, wordlist_name_item.chineseSText],
+            songSubList= [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.koreanText, wordlist_sub_item.chineseSText],
+            songDetailList= [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.koreanText, wordlist_detail_item.chineseSText],
+            genreNo= musicinfo_item.genreNo,
+            songFileName= musicinfo_item.songFileName,
+            new= music_attribute_item.new,
+            papamama= musicinfo_item.papamama,
+            branch = [
+                musicinfo_item.branchEasy, 
+                musicinfo_item.branchNormal, 
+                musicinfo_item.branchHard, 
+                musicinfo_item.branchMania, 
+                musicinfo_item.branchUra
+            ],
+            star = [
+                musicinfo_item.starEasy, 
+                musicinfo_item.starNormal, 
+                musicinfo_item.starHard, 
+                musicinfo_item.starMania, 
+                musicinfo_item.starUra
+            ],
+            shinuti = [
+                musicinfo_item.shinutiEasy, 
+                musicinfo_item.shinutiNormal, 
+                musicinfo_item.shinutiHard, 
+                musicinfo_item.shinutiMania, 
+                musicinfo_item.shinutiUra
+            ],
+            shinuti_score = [
+                musicinfo_item.shinutiScoreEasy, 
+                musicinfo_item.shinutiScoreNormal, 
+                musicinfo_item.shinutiScoreHard, 
+                musicinfo_item.shinutiScoreMania, 
+                musicinfo_item.shinutiScoreUra
+            ],
+            onpu_num = [
+                musicinfo_item.easyOnpuNum, 
+                musicinfo_item.normalOnpuNum, 
+                musicinfo_item.hardOnpuNum, 
+                musicinfo_item.maniaOnpuNum, 
+                musicinfo_item.uraOnpuNum
+            ],
+            renda_time = [
+                musicinfo_item.rendaTimeEasy, 
+                musicinfo_item.rendaTimeNormal, 
+                musicinfo_item.rendaTimeHard, 
+                musicinfo_item.rendaTimeMania, 
+                musicinfo_item.rendaTimeUra
+            ],
+            fuusen_total = [
+                musicinfo_item.fuusenTotalEasy, 
+                musicinfo_item.fuusenTotalNormal, 
+                musicinfo_item.fuusenTotalHard, 
+                musicinfo_item.fuusenTotalMania, 
+                musicinfo_item.fuusenTotalUra
+            ],
+            music_ai_section = [
+                music_ai_section_item.easy, 
+                music_ai_section_item.normal, 
+                music_ai_section_item.hard, 
+                music_ai_section_item.oni, 
+                music_ai_section_item.ura
+            ],
+            aiOniLevel11= music_ai_section_item.oniLevel11,
+            aiUraLevel11= music_ai_section_item.uraLevel11,
+            musicOrder= [] #TODO: musicorder
         )
 
     def parse_musicinfo(self):

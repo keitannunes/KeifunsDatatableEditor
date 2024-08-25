@@ -5,14 +5,14 @@ from PIL import Image, ImageTk
 from typing import List
 
 GENRE_MAPPING = {
-    "J-POP": 0,
-    "アニメ": 1,
-    "キッズ": 2,
-    "VOCALOID": 3,
-    "ゲームミュージック": 4,
-    "ナムコオリジナル": 5,
-    "バラエティー": 6,
-    "クラシック": 7,
+    "0. J-POP": 0,
+    "1. アニメ": 1,
+    "2. キッズ": 2,
+    "3. VOCALOID": 3,
+    "4. ゲームミュージック": 4,
+    "5. ナムコオリジナル": 5,
+    "6. バラエティー": 6,
+    "7. クラシック": 7,
 }
 
 class Program:
@@ -59,7 +59,7 @@ class Program:
     song_detail_var: tk.StringVar
     song_filename_var: tk.StringVar
     new_var: tk.BooleanVar
-    can_play_ura_var: tk.BooleanVar
+    papamama_var: tk.BooleanVar
     unique_id_var: tk.IntVar
     genre_var: tk.StringVar
 
@@ -82,7 +82,7 @@ class Program:
 
     #Checkbutton
     new_checkbutton: tk.Checkbutton
-    can_play_ura_checkbutton: tk.Checkbutton
+    papamama_checkbutton: tk.Checkbutton
     branch_checkbuttons: List[tk.Checkbutton]
     branch_values: List[tk.BooleanVar]
     ai_hard_checkbuttons: List[tk.Checkbutton]
@@ -98,6 +98,18 @@ class Program:
     ai_sections_radiobuttons: List[List[tk.Radiobutton]]
     ai_sections_values: List[tk.IntVar]
 
+    ### Music Order
+
+    music_order_window: tk.Toplevel
+    music_order_genre_order_labels: List[tk.Label]
+    music_order_genre_frame: List[tk.Frame]
+    music_order_genre_display_checkbuttons: List[tk.Checkbutton]
+    music_order_genre_display_var:  List[tk.BooleanVar]
+    music_order_genre_order_spinboxes: List[tk.Spinbox]
+    music_order_genre_order_val: List[tk.IntVar]
+    music_order_submit_button: tk.Button
+
+
     #Other Variables
     current_songid: str
     datatable: dt.Datatable
@@ -112,7 +124,7 @@ class Program:
         icon = ImageTk.PhotoImage(img)
 
         # Set the window icon
-        self.window.wm_iconphoto(False, icon) # type: ignore
+        self.window.wm_iconphoto(True, icon) # type: ignore
 
         self.menu_bar = tk.Menu(self.window, tearoff=0)
 
@@ -152,7 +164,7 @@ class Program:
         self.language_value.set(0)
         self.language_value.trace_add("write", self.on_language_change)
 
-        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'zh-CN', 'ko']):
+        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'ko', 'zh-CN']):
             self.language_radiobuttons.append(tk.Radiobutton(self.language_frame, text=lang, variable=self.language_value, value=i))
             self.language_radiobuttons[i].grid(row=0, column=i)
 
@@ -181,7 +193,7 @@ class Program:
         self.song_detail_var = tk.StringVar()
         self.song_filename_var = tk.StringVar()
         self.new_var = tk.BooleanVar()
-        self.can_play_ura_var = tk.BooleanVar()
+        self.papamama_var = tk.BooleanVar()
         self.unique_id_var = tk.IntVar()
         self.genre_var = tk.StringVar()
 
@@ -202,11 +214,11 @@ class Program:
         self.new_checkbutton = tk.Checkbutton(self.song_details_frame, text="New", variable=self.new_var)
         self.new_checkbutton.grid(row=2, column=1)
 
-        self.can_play_ura_checkbutton = tk.Checkbutton(self.song_details_frame, text="Ura Playable", variable=self.can_play_ura_var)
-        self.can_play_ura_checkbutton.grid(row=3, column=1)
+        self.papamama_checkbutton = tk.Checkbutton(self.song_details_frame, text="Papamama", variable=self.papamama_var)
+        self.papamama_checkbutton.grid(row=3, column=1)
 
         # Button (no variable needed, as it’s an action trigger)
-        self.music_order_button = tk.Button(self.song_details_frame, text="Set Music Order")
+        self.music_order_button = tk.Button(self.song_details_frame, text="Set Music Order", command=self.open_musicorder_window)
         self.music_order_button.grid(row=4, column=1)
 
         # Spinbox widget bound to IntVar
@@ -262,7 +274,7 @@ class Program:
         self.ai_sections_radiobuttons = list()
         self.ai_sections_values = [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         for e in self.ai_sections_values:
-            e.set(3)
+            e.set(5)
         self.ai_hard_checkbuttons = list()
         self.ai_hard_values = [tk.BooleanVar(), tk.BooleanVar()]
 
@@ -321,9 +333,42 @@ class Program:
                 widget.grid_configure(padx=5, pady=1)
 
         self.current_songid = ''
+        self.song_info = dt.Song()
         self.datatable = dt.Datatable('C:\\Users\\knunes\\Downloads\\out\\KeifunsDatatableEditor\\datatable') #TODO: Variable dt
 
-            
+    def open_musicorder_window(self):
+        self.music_order_window = tk.Toplevel(self.window)
+        self.music_order_window.title(f'Music Order - {self.current_songid}')
+
+        self.music_order_genre_order_labels = list()
+        self.music_order_genre_frame = list()
+        self.music_order_genre_display_checkbuttons = list()
+        self.music_order_genre_display_var = list()
+        self.music_order_genre_order_spinboxes = list()
+        self.music_order_genre_order_val = list()
+
+        for i, v in enumerate(GENRE_MAPPING.keys()):
+            self.music_order_genre_order_labels.append(tk.Label(self.music_order_window, text=v, pady=5, anchor="w", width=20, padx=20))
+            self.music_order_genre_order_labels[i].grid(row=2*i, column=0)
+
+            self.music_order_genre_frame.append(tk.Frame(self.music_order_window))
+            self.music_order_genre_frame[i].grid(row=2*i+1, column=0)
+
+            self.music_order_genre_display_var.append(tk.BooleanVar())
+            self.music_order_genre_display_checkbuttons.append(tk.Checkbutton(self.music_order_genre_frame[i], variable=self.music_order_genre_display_var[i]))
+            self.music_order_genre_display_checkbuttons[i].grid(row=0, column=0)
+
+            self.music_order_genre_order_val.append(tk.IntVar())
+            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_val[i]))
+            self.music_order_genre_order_spinboxes[i].grid(row=0, column=1)
+        
+        self.music_order_button_frame = tk.Frame(self.music_order_window, pady=10)
+        self.music_order_button_frame.grid(row=2*len(GENRE_MAPPING)+1, column=0)
+
+        self.music_order_submit_button = tk.Button(self.music_order_button_frame, text="Update", command=self.on_music_order_submit)
+        self.music_order_submit_button.grid(row=0, column=0)
+
+
 
     def run(self):
         self.window.mainloop()
@@ -346,14 +391,17 @@ class Program:
         self.current_songid = event.widget.get()
         try:
             self.populate_ui()
-        except Exception:
-            messagebox.showerror('Song Load Error', f"Songid {self.current_songid} not found")
+        except Exception as e:
+            messagebox.showerror('Song Load Error', str(e))
             self.current_songid = old_songid
             self.songid_entry.delete(0, tk.END)
             self.songid_entry.insert(0, old_songid)
     
     def on_language_change(self, *args):
         self.poplate_wordlist_vars()
+
+    def on_music_order_submit(self):
+        self.music_order_window.destroy()
 
     def populate_ui(self):
         self.song_info = self.datatable.get_song_info(self.current_songid)
@@ -363,66 +411,20 @@ class Program:
         self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)
         self.song_filename_var.set(self.song_info.songFileName)
         self.new_var.set(self.song_info.new)
-        self.can_play_ura_var.set(self.song_info.ura)
+        self.papamama_var.set(self.song_info.papamama)
 
-        self.branch_values[0].set(self.song_info.branchEasy)
-        self.branch_values[1].set(self.song_info.branchNormal)
-        self.branch_values[2].set(self.song_info.branchHard)
-        self.branch_values[3].set(self.song_info.branchMania)
-        self.branch_values[4].set(self.song_info.branchUra)
-
-        self.star_values[0].set(self.song_info.starEasy)
-        self.star_values[1].set(self.song_info.starNormal)
-        self.star_values[2].set(self.song_info.starHard)
-        self.star_values[3].set(self.song_info.starMania)
-        self.star_values[4].set(self.song_info.starUra)
-
-        self.shinuchi_values[0].set(self.song_info.shinutiEasy)
-        self.shinuchi_values[1].set(self.song_info.shinutiNormal)
-        self.shinuchi_values[2].set(self.song_info.shinutiHard)
-        self.shinuchi_values[3].set(self.song_info.shinutiMania)
-        self.shinuchi_values[4].set(self.song_info.shinutiUra)
-
-        self.shinuchi_score_values[0].set(self.song_info.shinutiScoreEasy)
-        self.shinuchi_score_values[1].set(self.song_info.shinutiScoreNormal)
-        self.shinuchi_score_values[2].set(self.song_info.shinutiScoreHard)
-        self.shinuchi_score_values[3].set(self.song_info.shinutiScoreMania)
-        self.shinuchi_score_values[4].set(self.song_info.shinutiScoreUra)
-
-        self.onpu_num_values[0].set(self.song_info.easyOnpuNum)
-        self.onpu_num_values[1].set(self.song_info.normalOnpuNum)
-        self.onpu_num_values[2].set(self.song_info.hardOnpuNum)
-        self.onpu_num_values[3].set(self.song_info.maniaOnpuNum)
-        self.onpu_num_values[4].set(self.song_info.uraOnpuNum)
-
-        self.renda_time_values[0].set(str(self.song_info.rendaTimeEasy))
-        self.renda_time_values[1].set(str(self.song_info.rendaTimeNormal))
-        self.renda_time_values[2].set(str(self.song_info.rendaTimeHard))
-        self.renda_time_values[3].set(str(self.song_info.rendaTimeMania))
-        self.renda_time_values[4].set(str(self.song_info.rendaTimeUra))
-
-        self.fuusen_total_values[0].set(self.song_info.fuusenTotalEasy)
-        self.fuusen_total_values[1].set(self.song_info.fuusenTotalNormal)
-        self.fuusen_total_values[2].set(self.song_info.fuusenTotalHard)
-        self.fuusen_total_values[3].set(self.song_info.fuusenTotalMania)
-        self.fuusen_total_values[4].set(self.song_info.fuusenTotalUra)
-
-        self.ai_sections_values[0].set(self.song_info.aiEasy)
-        self.ai_sections_values[1].set(self.song_info.aiNormal)
-        self.ai_sections_values[2].set(self.song_info.aiHard)
-        self.ai_sections_values[3].set(self.song_info.aiOni)
-        self.ai_sections_values[4].set(self.song_info.aiUra)
+        for i in range(5):
+            self.branch_values[i].set(self.song_info.branch[i])
+            self.star_values[i].set(self.song_info.star[i])
+            self.shinuchi_values[i].set(self.song_info.shinuti[i])
+            self.shinuchi_score_values[i].set(self.song_info.shinuti_score[i])
+            self.onpu_num_values[i].set(self.song_info.onpu_num[i])
+            self.renda_time_values[i].set(str(self.song_info.renda_time[i]))
+            self.fuusen_total_values[i].set(self.song_info.fuusen_total[i])
+            self.ai_sections_values[i].set(self.song_info.music_ai_section[i])
 
         self.ai_hard_values[0].set(self.song_info.aiOniLevel11 == "o")
-        self.ai_hard_values[1].set(self.song_info.aiUraLevel11 == "o")
-        
-        
-        
-        
-        
-        
-
-        
+        self.ai_hard_values[1].set(self.song_info.aiUraLevel11 == "o")     
 
     def poplate_wordlist_vars(self):
         self.song_name_var.set(self.song_info.songNameList[self.language_value.get()])
