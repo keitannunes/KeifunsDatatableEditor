@@ -11,7 +11,7 @@ GENRE_MAPPING = {
     "3. VOCALOID": 3,
     "4. ゲームミュージック": 4,
     "5. ナムコオリジナル": 5,
-    "6. バラエティー": 6,
+    "6. バラエティ": 6,
     "7. クラシック": 7,
 }
 
@@ -106,7 +106,7 @@ class Program:
     music_order_genre_display_checkbuttons: List[tk.Checkbutton]
     music_order_genre_display_var:  List[tk.BooleanVar]
     music_order_genre_order_spinboxes: List[tk.Spinbox]
-    music_order_genre_order_val: List[tk.IntVar]
+    music_order_genre_order_var: List[tk.IntVar]
     music_order_submit_button: tk.Button
 
 
@@ -345,7 +345,7 @@ class Program:
         self.music_order_genre_display_checkbuttons = list()
         self.music_order_genre_display_var = list()
         self.music_order_genre_order_spinboxes = list()
-        self.music_order_genre_order_val = list()
+        self.music_order_genre_order_var = list()
 
         for i, v in enumerate(GENRE_MAPPING.keys()):
             self.music_order_genre_order_labels.append(tk.Label(self.music_order_window, text=v, pady=5, anchor="w", width=20, padx=20))
@@ -355,11 +355,13 @@ class Program:
             self.music_order_genre_frame[i].grid(row=2*i+1, column=0)
 
             self.music_order_genre_display_var.append(tk.BooleanVar())
+            self.music_order_genre_display_var[i].set(self.song_info.musicOrder[i] != -1)
             self.music_order_genre_display_checkbuttons.append(tk.Checkbutton(self.music_order_genre_frame[i], variable=self.music_order_genre_display_var[i]))
             self.music_order_genre_display_checkbuttons[i].grid(row=0, column=0)
 
-            self.music_order_genre_order_val.append(tk.IntVar())
-            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_val[i]))
+            self.music_order_genre_order_var.append(tk.IntVar())
+            self.music_order_genre_order_var[i].set(self.song_info.musicOrder[i])
+            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_var[i]))
             self.music_order_genre_order_spinboxes[i].grid(row=0, column=1)
         
         self.music_order_button_frame = tk.Frame(self.music_order_window, pady=10)
@@ -401,6 +403,11 @@ class Program:
         self.poplate_wordlist_vars()
 
     def on_music_order_submit(self):
+        for i, display in enumerate(self.music_order_genre_display_var):
+            if display.get():
+                self.song_info.musicOrder[i] = self.music_order_genre_order_var[i].get()
+            else:
+                self.song_info.musicOrder[i] = -1
         self.music_order_window.destroy()
 
     def populate_ui(self):

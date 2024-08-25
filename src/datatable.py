@@ -43,7 +43,6 @@ class DatatableIndices:
     music_ai_section: int
     music_usbsetting: int
 
-
 @dataclass
 class MusicinfoItem:
     id: str = ""
@@ -244,7 +243,7 @@ class Datatable:
                 if e.id == id:
                     music_usbsetting_index = i
                     break
-            
+
             indices = DatatableIndices(
                 wordlist_name_index,
                 wordlist_sub_index,
@@ -272,6 +271,17 @@ class Datatable:
         musicinfo_item = self.musicinfo[indices.musicinfo]
         music_attribute_item = self.music_attribute[indices.music_attribute]
         music_ai_section_item = self.music_ai_section[indices.music_ai_section]
+        
+        music_order_indices = [-1, -1, -1, -1, -1, -1, -1, -1]
+        current_genre = 0
+        current_genre_offset = 0
+        for i, e in enumerate(self.music_order):
+            if e.genreNo != current_genre:
+                current_genre = e.genreNo
+                current_genre_offset = i
+            if e.id == id:
+                music_order_indices[e.genreNo] = i - current_genre_offset
+            
         
         return Song(
             id= id,
@@ -341,7 +351,7 @@ class Datatable:
             ],
             aiOniLevel11= music_ai_section_item.oniLevel11,
             aiUraLevel11= music_ai_section_item.uraLevel11,
-            musicOrder= [] #TODO: musicorder
+            musicOrder= music_order_indices
         )
 
     def parse_musicinfo(self):
