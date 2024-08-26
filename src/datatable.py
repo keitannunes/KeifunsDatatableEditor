@@ -6,6 +6,17 @@ import os
 from dataclasses import dataclass, field
 from typing import List
 
+"""
+When adding a new attribute:
+    1. If new file: 
+        create dataclass, variable in class, parser function,
+        add index attribute to indices class, add search function in get_indices(),
+        *also double check if update_uid() is affected
+    2. Add attribute to Song class
+    3. Update get_song_info()
+    4. Update set_song_info()
+    5. Update save_datatable()
+"""
 @dataclass
 class Song:
     id: str = ""
@@ -35,13 +46,13 @@ class Song:
 @dataclass
 class DatatableIndices:
     """For keeping track of where each song is"""
-    wordlist_name: int
-    wordlist_sub: int
-    wordlist_detail: int
-    musicinfo: int
-    music_attribute: int
-    music_ai_section: int
-    music_usbsetting: int
+    wordlist_name: int = -1
+    wordlist_sub: int = -1
+    wordlist_detail: int = -1
+    musicinfo: int = -1
+    music_attribute: int = -1
+    music_ai_section: int = -1
+    music_usbsetting: int = -1
 
 @dataclass
 class MusicinfoItem:
@@ -164,30 +175,32 @@ class WordlistItem:
     japaneseText: str = ""
     japaneseFontType: int = 0
     englishUsText: str = ""
-    englishUsFontType: int = 0
+    englishUsFontType: int = 1
     chineseTText: str = ""
-    chineseTFontType: int = 0
-    chineseSText: str = ""
-    chineseSFontType: int = 0
+    chineseTFontType: int = 2
     koreanText: str = ""
-    koreanFontType: int = 0
+    koreanFontType: int = 3
+    chineseSText: str = ""
+    chineseSFontType: int = 4
 
 
 class Datatable:
     filepath: str
     indices: Dict[str, DatatableIndices]
+    uid_musicinfo_index_mapping: Dict[int, int]
     wordlist: List[WordlistItem]
     musicinfo: List[MusicinfoItem]
     music_attribute: List[MusicAttributeItem]
-    music_order: List[MusicOrderItem]
+    music_order: List[List[MusicOrderItem]]
     music_ai_section: List[MusicAISectionItem]
-    music_usb_setting: List[MusicUsbsettingItem]
+    music_usbsetting: List[MusicUsbsettingItem]
 
 
     def __init__(self, filepath: str):
         self.filepath = filepath
         
         self.indices = dict()
+        self.uid_musicinfo_index_mapping = dict()
 
         self.parse_musicinfo()
         self.parse_wordlist()
@@ -209,7 +222,7 @@ class Datatable:
                     break
             
             if musicinfo_index == -1:
-                raise Exception(f"song {id} not found")
+                raise KeyError(f"song {id} not found")
             
             wordlist_name_index = -1
             wordlist_sub_index = -1
@@ -256,7 +269,7 @@ class Datatable:
 
             for field in fields(indices):
                 if getattr(indices, field.name) == -1:
-                    raise Exception(f"Could not find {id} in {field.name}") #-1 for underscore
+                    raise ValueError(f"Could not find {id} in {field.name}") #-1 for underscore, Value Error probably
                     
             self.indices[id] = indices
         return indices
@@ -273,15 +286,11 @@ class Datatable:
         music_ai_section_item = self.music_ai_section[indices.music_ai_section]
         
         music_order_indices = [-1, -1, -1, -1, -1, -1, -1, -1]
-        current_genre = 0
-        current_genre_offset = 0
-        for i, e in enumerate(self.music_order):
-            if e.genreNo != current_genre:
-                current_genre = e.genreNo
-                current_genre_offset = i
-            if e.id == id:
-                music_order_indices[e.genreNo] = i - current_genre_offset
-            
+        for genre_no, genre_list in enumerate(self.music_order):
+            for i, e in enumerate(genre_list):
+                if e.id == id:
+                    music_order_indices[genre_no] = i
+                    break 
         
         return Song(
             id= id,
@@ -353,6 +362,147 @@ class Datatable:
             aiUraLevel11= music_ai_section_item.uraLevel11,
             musicOrder= music_order_indices
         )
+    
+    def set_song_info(self, song_info: Song):
+        indices: DatatableIndices
+        try:
+            indices = self.get_indices(song_info.id)
+        except KeyError:
+            #Set indices to length of each variable (index of appended item)
+            indices = DatatableIndices(
+                wordlist_name=len(self.wordlist),
+                wordlist_sub=len(self.wordlist)+1,
+                wordlist_detail=len(self.wordlist)+2,
+                musicinfo=len(self.musicinfo),
+                music_attribute=len(self.music_attribute),
+                music_ai_section=len(self.music_ai_section),
+                music_usbsetting=len(self.music_usbsetting)
+            )
+
+            #Append each item
+
+            for i in range(3): self.wordlist.append(WordlistItem())
+            self.musicinfo.append(MusicinfoItem())
+            self.music_attribute.append(MusicAttributeItem())
+            self.music_ai_section.append(MusicAISectionItem())
+            self.music_usbsetting.append(MusicUsbsettingItem())
+
+        # List of language attributes
+        languages = ['japaneseText', 'englishUsText', 'chineseTText', 'koreanText', 'chineseSText']
+
+        # Updating songNameList
+        for i, language in enumerate(languages):
+            setattr(self.wordlist[indices.wordlist_name], language, song_info.songNameList[i])
+
+        # Updating songSubList
+        for i, language in enumerate(languages):
+            setattr(self.wordlist[indices.wordlist_sub], language, song_info.songSubList[i])
+
+        # Updating songDetailList
+        for i, language in enumerate(languages):
+            setattr(self.wordlist[indices.wordlist_detail], language, song_info.songDetailList[i])
+
+        if song_info.uniqueId != self.musicinfo[indices.musicinfo].uniqueId:
+            self.update_uid(self.musicinfo[indices.musicinfo].uniqueId, song_info.uniqueId)
+
+        self.musicinfo[indices.musicinfo].genreNo = song_info.genreNo
+        self.musicinfo[indices.musicinfo].songFileName = song_info.songFileName
+        self.musicinfo[indices.musicinfo].papamama = song_info.papamama
+
+        self.music_attribute[indices.music_attribute].new = song_info.new
+
+        # For branch
+        for i, attribute in enumerate(['branchEasy', 'branchNormal', 'branchHard', 'branchMania', 'branchUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.branch[i])
+
+        # For star
+        for i, attribute in enumerate(['starEasy', 'starNormal', 'starHard', 'starMania', 'starUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.star[i])
+
+        # For shinuti
+        for i, attribute in enumerate(['shinutiEasy', 'shinutiNormal', 'shinutiHard', 'shinutiMania', 'shinutiUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti[i])
+
+        for i, attribute in enumerate(['shinutiEasyDuet', 'shinutiNormalDuet', 'shinutiHardDuet', 'shinutiManiaDuet', 'shinutiUraDuet']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti[i])
+
+        # For shinuti_score
+        for i, attribute in enumerate(['shinutiScoreEasy', 'shinutiScoreNormal', 'shinutiScoreHard', 'shinutiScoreMania', 'shinutiScoreUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti_score[i])
+
+        for i, attribute in enumerate(['shinutiScoreEasyDuet', 'shinutiScoreNormalDuet', 'shinutiScoreHardDuet', 'shinutiScoreManiaDuet', 'shinutiScoreUraDuet']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti_score[i])
+
+        # For onpu_num
+        for i, attribute in enumerate(['easyOnpuNum', 'normalOnpuNum', 'hardOnpuNum', 'maniaOnpuNum', 'uraOnpuNum']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.onpu_num[i])
+
+        # For renda_time
+        for i, attribute in enumerate(['rendaTimeEasy', 'rendaTimeNormal', 'rendaTimeHard', 'rendaTimeMania', 'rendaTimeUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.renda_time[i])
+
+        # For fuusen_total
+        for i, attribute in enumerate(['fuusenTotalEasy', 'fuusenTotalNormal', 'fuusenTotalHard', 'fuusenTotalMania', 'fuusenTotalUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.fuusen_total[i])
+        
+        #For ai section
+        for i, attribute in enumerate(['easy', 'normal', 'hard', 'oni', 'ura']):
+            setattr(self.music_ai_section[indices.music_ai_section], attribute, song_info.music_ai_section[i])
+        
+        self.music_ai_section[indices.music_ai_section].oniLevel11 = song_info.aiOniLevel11
+        self.music_ai_section[indices.music_ai_section].uraLevel11 = song_info.aiUraLevel11
+
+        ### Music Order
+
+        #Delete from music order
+        for genre_list in self.music_order:
+            genre_list[:] = [item for item in genre_list if item.id != id]
+
+        for genre_no, new_position in enumerate(song_info.musicOrder):
+            if new_position != -1:
+                # Create a new MusicOrderItem for this genre if not already present
+                song_item = MusicOrderItem(genreNo=genre_no, id=song_info.id, uniqueId=song_info.uniqueId)
+                
+                # Insert into the genre list at the specified position
+                genre_list = self.music_order[genre_no]
+                if new_position >= len(genre_list):
+                    # If the new position is beyond the current length of the list, append it
+                    genre_list.append(song_item)
+                else:
+                    # Otherwise, insert at the specific position
+                    genre_list.insert(new_position, song_item)
+
+    def is_uid_taken(self, uniqueId: int):
+        if uniqueId in self.uid_musicinfo_index_mapping:
+            return True
+        for i, e in enumerate(self.musicinfo):
+            if e.uniqueId == uniqueId: 
+                self.uid_musicinfo_index_mapping[e.uniqueId] = i
+                return True
+        return False
+    
+    def update_uid(self, old_uniqueId: int, new_uniqueId: int): #snake and camel case in one variable name is a first
+        """THIS FUNCTION ASSUMES NEW UNIQUE ID IS INDEED UNIQUE!!!!!"""
+        if old_uniqueId not in self.uid_musicinfo_index_mapping:
+            for i, e in enumerate(self.musicinfo):
+                if e.uniqueId == old_uniqueId: 
+                    self.uid_musicinfo_index_mapping[e.uniqueId] = i
+                    break
+        song_id = self.musicinfo[self.uid_musicinfo_index_mapping[old_uniqueId]].id
+        indices = self.get_indices(song_id)
+
+        self.musicinfo[self.uid_musicinfo_index_mapping[old_uniqueId]].uniqueId = new_uniqueId
+        self.music_attribute[indices.music_attribute].uniqueId = new_uniqueId
+        self.music_ai_section[indices.music_ai_section].uniqueId = new_uniqueId
+        self.music_usbsetting[indices.music_usbsetting].uniqueId = new_uniqueId
+        for l in self.music_order:
+            for e in l:
+                if e.uniqueId == old_uniqueId:
+                    e.uniqueId = new_uniqueId
+                    break
+
+        self.uid_musicinfo_index_mapping[new_uniqueId] = self.uid_musicinfo_index_mapping[old_uniqueId]
+        del self.uid_musicinfo_index_mapping[old_uniqueId]
 
     def parse_musicinfo(self):
         with open(os.path.join(self.filepath, 'musicinfo.json'), 'r', encoding='utf-8') as f:
@@ -398,18 +548,25 @@ class Datatable:
 
         defaults = MusicOrderItem().__dict__
 
-        self.music_order = []
+        self.music_order = [[] for _ in range(8)] 
         # Convert the list of dictionaries to a list of Item objects
         for item in data_dict['items']:
             try:
                 # Use dictionary unpacking with defaults
                 full_item = {**defaults, **item}
 
-                # Create the WordlistItem using the merged dictionary
+                # Create the MusicOrderItem using the merged dictionary
                 music_order_item = MusicOrderItem(**full_item)
-                self.music_order.append(music_order_item)
+
+                # Append to the appropriate genre list based on genreNo
+                genre_no = music_order_item.genreNo
+                if 0 <= genre_no < len(self.music_order):
+                    self.music_order[genre_no].append(music_order_item)
+                else:
+                    print(f"Invalid genreNo {genre_no} for item {music_order_item.id}")
             except TypeError as e:
-                print(f"Failed to create MusicOrderItem from {item['id']}: {e}")
+                print(f"Failed to create MusicOrderItem from {item.get('id', 'unknown')}: {e}")
+
         
     def parse_music_AI_section(self):
         with open(os.path.join(self.filepath, 'music_ai_section.json'), 'r', encoding='utf-8') as f:

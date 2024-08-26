@@ -109,9 +109,16 @@ class Program:
     music_order_genre_order_var: List[tk.IntVar]
     music_order_submit_button: tk.Button
 
+    ### New Song
+
+    new_song_window: tk.Toplevel
+    new_song_id_label: tk.Label
+    new_song_id_entry: tk.Entry
+    new_song_confirm: tk.Button
 
     #Other Variables
     current_songid: str
+    previous_language: int
     datatable: dt.Datatable
     song_info: dt.Song
 
@@ -130,10 +137,10 @@ class Program:
 
         #File Menu
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.file_menu.add_command(label="Open Datatable", command=self.open_datatable)
-        self.file_menu.add_command(label="Save Datatable", command=self.save_datatable)
+        self.file_menu.add_command(label="Open Datatable", accelerator="Ctrl+O", command=self.open_datatable)
+        self.file_menu.add_command(label="Save Datatable", accelerator="Ctrl+S", command=self.save_datatable)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="New Song", command=self.new_song)
+        self.file_menu.add_command(label="New Song", accelerator="Ctrl+N", command=self.on_new_song) 
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.window.quit)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
@@ -145,6 +152,10 @@ class Program:
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
 
         self.window.config(menu=self.menu_bar)
+
+        #Bind keys
+
+        self.window.bind("<Control-n>", self.on_new_song) #type: ignore
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
         self.songid_entry = tk.Entry(self.window)
@@ -333,11 +344,13 @@ class Program:
                 widget.grid_configure(padx=5, pady=1)
 
         self.current_songid = ''
+        self.previous_language = 0
         self.song_info = dt.Song()
         self.datatable = dt.Datatable('C:\\Users\\knunes\\Downloads\\out\\KeifunsDatatableEditor\\datatable') #TODO: Variable dt
 
     def open_musicorder_window(self):
         self.music_order_window = tk.Toplevel(self.window)
+        self.music_order_window.grab_set()
         self.music_order_window.title(f'Music Order - {self.current_songid}')
 
         self.music_order_genre_order_labels = list()
@@ -370,8 +383,61 @@ class Program:
         self.music_order_submit_button = tk.Button(self.music_order_button_frame, text="Update", command=self.on_music_order_submit)
         self.music_order_submit_button.grid(row=0, column=0)
 
+    def on_new_song(self, *args):
+        self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
+        self.new_song_window.grab_set()
+        self.new_song_window.title(f'New Song')
+
+        self.new_song_id_label = tk.Label(self.new_song_window, text="Song Id:", anchor="w", width=20)
+        self.new_song_id_label.grid(row=0, column=0)
+        # self.new_song_id_frame = tk.Frame(self.new_song_window)
+        # self.new_song_id_frame.grid(row=1, column=0)
+        self.new_song_id_entry = tk.Entry(self.new_song_window)
+        self.new_song_id_entry.grid(row=1, column=0, padx=5)
+        self.new_song_confirm = tk.Button(self.new_song_window, text="Create")
+        self.new_song_confirm.grid(row=1, column=1)
+
+    def check_and_confirm_uid(self, uniqueId: int) -> bool:
+        """
+        Returns if uid can be used / uid initially in use is changed
+        """
+        if not self.datatable.is_uid_taken(uniqueId): return True
+        
+        response = messagebox.askyesno("Duplicate UniqueId", f"UniqueId {uniqueId} already exists, use anyway?")
+        if not response: return False
+
+        ret = False
+
+        def submit():
+            nonlocal ret
+            uniqueId_input = new_uid_var.get()
+            if not uniqueId_input:
+                messagebox.showerror(f'Update uniqueId {uniqueId}', 'Enter a uniqueId')
+                return
+            if self.datatable.is_uid_taken(uniqueId_input):
+                messagebox.showerror(f'Update uniqueId {uniqueId}', f'UniqueId already {uniqueId_input} taken')
+                return
+            self.datatable.update_uid(uniqueId, uniqueId_input)
+            ret = True
+            new_uid_window.destroy()
+
+        new_uid_window = tk.Toplevel(pady=10, padx=10)
+        new_uid_window.grab_set()
+        new_uid_window.title('Update uniqueId {uniqueId}')
+        prompt = tk.Label(new_uid_window, text = 'Enter a new UniqueId for the song to overwrite the existing one')
+        prompt.grid(row=0, column=0)
+        new_uid_var = tk.IntVar()
+        new_uid_entry = tk.Spinbox(new_uid_window, textvariable=new_uid_var)
+        new_uid_entry.grid(row=1, column=0)
+        confirm_button = tk.Button(new_uid_window, text='Update', command=submit)
+        confirm_button.grid(row=2, column=0)
+
+        new_uid_window.wait_window()
+        return ret
 
 
+
+    
     def run(self):
         self.window.mainloop()
 
@@ -381,16 +447,59 @@ class Program:
     def open_datatable(self):
         pass
 
-    def new_song(self):
-        pass
-
     def show_about(self):
         pass
+
+    def save_song(self):
+        #Music order will always be up-to-date so we don't have to save that here
+        #Same goes for wordlist vars asides current language
+
+        if self.song_info.uniqueId != self.unique_id_var.get():
+            if self.check_and_confirm_uid(self.unique_id_var.get()):
+                self.song_info.uniqueId = self.unique_id_var.get()
+            else:
+                raise Exception("UniqueId already exists")
+
+
+        self.song_info.songNameList[self.language_value.get()] = self.song_name_var.get()
+        self.song_info.songSubList[self.language_value.get()] = self.song_sub_var.get()
+        self.song_info.songDetailList[self.language_value.get()] = self.song_detail_var.get()
+
+        genre = self.genre_var.get()
+        if genre in GENRE_MAPPING: 
+            self.song_info.genreNo = GENRE_MAPPING[genre]
+        else:
+            raise Exception("Invalid Genre")
+        
+        self.song_info.songFileName = self.song_filename_var.get()
+        self.song_info.new = self.new_var.get()
+        self.song_info.papamama = self.papamama_var.get()
+
+        for i in range(5):
+            self.song_info.branch[i] = self.branch_values[i].get()
+            self.song_info.star[i] = self.star_values[i].get()
+            self.song_info.shinuti[i] = self.shinuchi_values[i].get()
+            self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
+            self.song_info.onpu_num[i] = self.onpu_num_values[i].get()
+            self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
+            self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
+            self.song_info.music_ai_section[i] = self.ai_sections_values[i].get()
+        
+        self.datatable.set_song_info(self.song_info)
 
     def on_songid(self, event: tk.Event):
         if event.widget.get() == self.current_songid: return
         old_songid = self.current_songid
         self.current_songid = event.widget.get()
+        if old_songid != '':
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Song Save Error', f'Song Save Error: {e}')
+                self.current_songid = old_songid
+                self.songid_entry.delete(0, tk.END)
+                self.songid_entry.insert(0, old_songid)
+                return
         try:
             self.populate_ui()
         except Exception as e:
@@ -400,6 +509,10 @@ class Program:
             self.songid_entry.insert(0, old_songid)
     
     def on_language_change(self, *args):
+        self.song_info.songNameList[self.previous_language] = self.song_name_var.get()
+        self.song_info.songSubList[self.previous_language] = self.song_sub_var.get()
+        self.song_info.songDetailList[self.previous_language] = self.song_detail_var.get()
+        self.previous_language = self.language_value.get()
         self.poplate_wordlist_vars()
 
     def on_music_order_submit(self):
