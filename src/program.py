@@ -384,6 +384,13 @@ class Program:
         self.music_order_submit_button.grid(row=0, column=0)
 
     def on_new_song(self, *args):
+        if self.current_songid:
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                return
+
         self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
         self.new_song_window.grab_set()
         self.new_song_window.title(f'New Song')
@@ -394,8 +401,32 @@ class Program:
         # self.new_song_id_frame.grid(row=1, column=0)
         self.new_song_id_entry = tk.Entry(self.new_song_window)
         self.new_song_id_entry.grid(row=1, column=0, padx=5)
-        self.new_song_confirm = tk.Button(self.new_song_window, text="Create")
+
+        new_id = ''
+        def on_create(*args):
+            nonlocal new_id
+            new_id_candidate = self.new_song_id_entry.get()
+            if not new_id_candidate:
+                messagebox.showerror('New Song', 'Enter a Song Id')
+                return  
+            if self.datatable.is_song_id_taken(new_id_candidate):
+                messagebox.showerror('New Song', 'Song Id already taken')
+                return
+            new_id = new_id_candidate
+            self.new_song_window.destroy()
+            
+        self.new_song_id_entry.bind('<Return>', on_create)
+        self.new_song_confirm = tk.Button(self.new_song_window, text="Create", command=on_create) #type: ignore
         self.new_song_confirm.grid(row=1, column=1)
+
+        self.new_song_window.wait_window()
+
+        if not new_id: return
+        self.song_info = dt.Song()
+        self.song_info.id = new_id
+        self.songid_entry.delete(0, tk.END)
+        self.songid_entry.insert(0, new_id)
+        self.populate_ui(no_query=True)
 
     def check_and_confirm_uid(self, uniqueId: int) -> bool:
         """
@@ -408,7 +439,7 @@ class Program:
 
         ret = False
 
-        def submit():
+        def submit(*args):
             nonlocal ret
             uniqueId_input = new_uid_var.get()
             if not uniqueId_input:
@@ -429,6 +460,7 @@ class Program:
         new_uid_var = tk.IntVar()
         new_uid_entry = tk.Spinbox(new_uid_window, textvariable=new_uid_var)
         new_uid_entry.grid(row=1, column=0)
+        new_uid_entry.bind('<Return>', submit)
         confirm_button = tk.Button(new_uid_window, text='Update', command=submit)
         confirm_button.grid(row=2, column=0)
 
@@ -503,7 +535,7 @@ class Program:
         try:
             self.populate_ui()
         except Exception as e:
-            messagebox.showerror('Song Load Error', str(e))
+            messagebox.showerror('Song Load Error', f'Song Load Error: {e}')
             self.current_songid = old_songid
             self.songid_entry.delete(0, tk.END)
             self.songid_entry.insert(0, old_songid)
@@ -523,8 +555,9 @@ class Program:
                 self.song_info.musicOrder[i] = -1
         self.music_order_window.destroy()
 
-    def populate_ui(self):
-        self.song_info = self.datatable.get_song_info(self.current_songid)
+    def populate_ui(self, no_query=False):
+        if not no_query:
+            self.song_info = self.datatable.get_song_info(self.current_songid)
 
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)

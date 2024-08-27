@@ -367,6 +367,7 @@ class Datatable:
         indices: DatatableIndices
         try:
             indices = self.get_indices(song_info.id)
+            print(indices)
         except KeyError:
             #Set indices to length of each variable (index of appended item)
             indices = DatatableIndices(
@@ -471,6 +472,13 @@ class Datatable:
                 else:
                     # Otherwise, insert at the specific position
                     genre_list.insert(new_position, song_item)
+
+    def is_song_id_taken(self, song_id: str):
+        if song_id in self.indices: return True
+        for e in self.musicinfo:
+            if e.id == song_id: return True
+        return False
+        
 
     def is_uid_taken(self, uniqueId: int):
         if uniqueId in self.uid_musicinfo_index_mapping:
@@ -624,10 +632,3 @@ class Datatable:
                 self.wordlist.append(wordlist_item)
             except TypeError as e:
                 print(f"Failed to create WordlistItem from {item['id']}: {e}")
-
-
-
-
-if __name__ == '__main__':
-    dt = Datatable('C:\\Users\\knunes\\Downloads\\out\\KeifunsDatatableEditor\\datatable')
-    print(dt.get_song_info('id1297'))
