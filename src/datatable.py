@@ -367,7 +367,6 @@ class Datatable:
         indices: DatatableIndices
         try:
             indices = self.get_indices(song_info.id)
-            print(indices)
         except KeyError:
             #Set indices to length of each variable (index of appended item)
             indices = DatatableIndices(
@@ -379,14 +378,15 @@ class Datatable:
                 music_ai_section=len(self.music_ai_section),
                 music_usbsetting=len(self.music_usbsetting)
             )
+            self.indices[song_info.id] = indices
 
             #Append each item
 
             for i in range(3): self.wordlist.append(WordlistItem())
-            self.musicinfo.append(MusicinfoItem())
-            self.music_attribute.append(MusicAttributeItem())
-            self.music_ai_section.append(MusicAISectionItem())
-            self.music_usbsetting.append(MusicUsbsettingItem())
+            self.musicinfo.append(MusicinfoItem(id=song_info.id, uniqueId=song_info.uniqueId))
+            self.music_attribute.append(MusicAttributeItem(id=song_info.id, uniqueId=song_info.uniqueId))
+            self.music_ai_section.append(MusicAISectionItem(id=song_info.id, uniqueId=song_info.uniqueId))
+            self.music_usbsetting.append(MusicUsbsettingItem(id=song_info.id, uniqueId=song_info.uniqueId))
 
         # List of language attributes
         languages = ['japaneseText', 'englishUsText', 'chineseTText', 'koreanText', 'chineseSText']

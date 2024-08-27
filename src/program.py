@@ -164,7 +164,6 @@ class Program:
         self.songid_entry.grid(row=1, column=0)
 
         self.songid_entry.bind("<Return>", self.on_songid)
-        self.songid_entry.bind("<FocusOut>", self.on_songid)
 
         
         ### Song Details ###
@@ -422,10 +421,10 @@ class Program:
         self.new_song_window.wait_window()
 
         if not new_id: return
-        self.song_info = dt.Song()
-        self.song_info.id = new_id
+        self.song_info = dt.Song(id=new_id)
         self.songid_entry.delete(0, tk.END)
         self.songid_entry.insert(0, new_id)
+        self.current_songid = new_id
         self.populate_ui(no_query=True)
 
     def check_and_confirm_uid(self, uniqueId: int) -> bool:
@@ -516,7 +515,6 @@ class Program:
             self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
             self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
             self.song_info.music_ai_section[i] = self.ai_sections_values[i].get()
-        
         self.datatable.set_song_info(self.song_info)
 
     def on_songid(self, event: tk.Event):
