@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields, field
 from typing import List, Dict
 import json
 import os
-import encryption
+from src import encryption
 
 from dataclasses import dataclass, field, asdict
 from typing import List
@@ -197,9 +197,22 @@ class Datatable:
     music_usbsetting: List[MusicUsbsettingItem]
 
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-        
+    def __init__(self, import_path: str):
+        self.filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datatable')
+        if not os.path.exists(self.filepath):
+            os.makedirs(self.filepath)
+        encryption.type = encryption.Keys.Datatable
+        for path, subdirs, files in os.walk(import_path):
+            for name in files:
+                if name not in ['musicinfo.bin', 'wordlist.bin', 'music_attribute.bin', 'music_ai_section.bin', 'music_usbsetting.bin', 'music_order.bin']:
+                    continue
+                full_path = os.path.join(path, name)
+                if os.path.isfile(full_path):
+                    encryption.save_file(
+                        file=full_path, #type: ignore
+                        outdir=os.path.join(self.filepath, name),
+                        encrypt=False,
+                    )
         self.indices = dict()
         self.uid_musicinfo_index_mapping = dict()
 
@@ -691,5 +704,6 @@ class Datatable:
                         outdir=full_path,
                         encrypt=True,
                     )
+                    os.remove(full_path)
 
         

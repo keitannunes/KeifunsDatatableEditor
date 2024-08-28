@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import padding
 from argparse import ArgumentParser
 from enum import Enum
 import binascii
-import config
+from src import config
 
 
 class Keys(Enum):
@@ -107,28 +107,23 @@ def encrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
 
 
 def save_file(file: bytes, outdir: str, encrypt: bool):
-    try:
-        fileContent = (
-            decrypt_file(input_file=file, key_type=type)
-            if not encrypt
-            else encrypt_file(input_file=file, key_type=type)
-        )
+    fileContent = (
+        decrypt_file(input_file=file, key_type=type)
+        if not encrypt
+        else encrypt_file(input_file=file, key_type=type)
+    )
 
-        if isJson(fileContent):
-            base = os.path.splitext(outdir)[0]
-            outdir = base + ".json"
-        else:
-            base = os.path.splitext(outdir)[0]
-            outdir = base + ".bin"
+    if isJson(fileContent):
+        base = os.path.splitext(outdir)[0]
+        outdir = base + ".json"
+    else:
+        base = os.path.splitext(outdir)[0]
+        outdir = base + ".bin"
 
-        print("Decrypting" if not encrypt else "Encrypting", file, "to", outdir)
+    print("Decrypting" if not encrypt else "Encrypting", file, "to", outdir)
 
-        with open(outdir, "wb") as outfile:
-            outfile.write(fileContent)
-    except Exception as error:
-        print(
-            file, "couldn't be", "decrypted :" if not encrypt else "encrypted :", error
-        )
+    with open(outdir, "wb") as outfile:
+        outfile.write(fileContent)
 
 
 if __name__ == "__main__":

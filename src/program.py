@@ -1,5 +1,5 @@
 import tkinter as tk
-import datatable as dt
+from src import datatable as dt
 from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
@@ -156,6 +156,7 @@ class Program:
         #Bind keys
 
         self.window.bind("<Control-n>", self.on_new_song) #type: ignore
+        self.window.bind("<Control-o>", self.open_datatable) #type: ignore
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
         self.songid_entry = tk.Entry(self.window)
@@ -345,7 +346,6 @@ class Program:
         self.current_songid = ''
         self.previous_language = 0
         self.song_info = dt.Song()
-        self.datatable = dt.Datatable('C:\\Users\\knunes\\Downloads\\out\\KeifunsDatatableEditor\\datatable') #TODO: Variable dt
 
     def open_musicorder_window(self):
         self.music_order_window = tk.Toplevel(self.window)
@@ -485,12 +485,28 @@ class Program:
             return
         try:
             self.datatable.export_datatable(selected_directory)
+            messagebox.showinfo('Export Datable', 'Export success')
         except Exception as e:
             messagebox.showerror('Export Error', f'Export Error: {e}')
             return
 
-    def open_datatable(self):
-        pass
+    def open_datatable(self, *args):
+        if hasattr(self, 'datatable') and self.current_songid:
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                return
+        selected_directory = filedialog.askdirectory(title="Select an import directory")
+        if not selected_directory:
+            messagebox.showerror('Import Error', f'Import Error: Select a folderpath')
+            return
+        try:
+            self.datatable = dt.Datatable(selected_directory)
+            messagebox.showinfo('Import Datable', 'Import success')
+        except Exception as e:
+            messagebox.showerror('Import Error', f'Import Error: {e}')
+
 
     def show_about(self):
         pass
