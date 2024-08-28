@@ -1,6 +1,6 @@
 import tkinter as tk
 import datatable as dt
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
 
@@ -473,7 +473,21 @@ class Program:
         self.window.mainloop()
 
     def save_datatable(self):
-        pass
+        if self.current_songid:
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                return
+        selected_directory = filedialog.askdirectory(title="Select an export directory")
+        if not selected_directory:
+            messagebox.showerror('Export Error', f'Select a folderpath')
+            return
+        try:
+            self.datatable.export_datatable(selected_directory)
+        except Exception as e:
+            messagebox.showerror('Export Error', f'Export Error: {e}')
+            return
 
     def open_datatable(self):
         pass
@@ -502,6 +516,10 @@ class Program:
         else:
             raise Exception("Invalid Genre")
         
+        if self.song_info.musicOrder[GENRE_MAPPING[genre]] == -1:
+            raise Exception("Music Order cannot be -1 for main genre")
+
+
         self.song_info.songFileName = self.song_filename_var.get()
         self.song_info.new = self.new_var.get()
         self.song_info.papamama = self.papamama_var.get()

@@ -2,8 +2,9 @@ from dataclasses import dataclass, fields, field
 from typing import List, Dict
 import json
 import os
+import encryption
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List
 
 """
@@ -632,3 +633,63 @@ class Datatable:
                 self.wordlist.append(wordlist_item)
             except TypeError as e:
                 print(f"Failed to create WordlistItem from {item['id']}: {e}")
+
+    def export_datatable(self, folder_path: str):
+        items_list = [asdict(item) for item in self.musicinfo]
+
+        # Create the final dictionary with the structure { "items": [...] }
+        data_dict = {"items": items_list}
+
+        # Write the dictionary to a JSON file
+        with open(os.path.join(folder_path, 'musicinfo.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+        
+        # Export wordlist
+        items_list = [asdict(item) for item in self.wordlist]
+        data_dict = {"items": items_list}
+        with open(os.path.join(folder_path, 'wordlist.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+
+        # Export music_attribute
+        items_list = [asdict(item) for item in self.music_attribute]
+        data_dict = {"items": items_list}
+        with open(os.path.join(folder_path, 'music_attribute.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+
+        # Export music_ai_section
+        items_list = [asdict(item) for item in self.music_ai_section]
+        data_dict = {"items": items_list}
+        with open(os.path.join(folder_path, 'music_ai_section.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+
+        # Export music_usbsetting
+        items_list = [asdict(item) for item in self.music_usbsetting]
+        data_dict = {"items": items_list}
+        with open(os.path.join(folder_path, 'music_usbsetting.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+        
+        # Flatten the list of lists for music_order
+        flattened_music_order = [item for sublist in self.music_order for item in sublist]
+
+        # Convert to list of dictionaries
+        items_list = [asdict(item) for item in flattened_music_order]
+        data_dict = {"items": items_list}
+
+        # Write the flattened list to a JSON file
+        with open(os.path.join(folder_path, 'music_order.json'), 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+
+        encryption.type = encryption.Keys.Datatable
+        for path, subdirs, files in os.walk(folder_path):
+            for name in files:
+                if name not in ['musicinfo.json', 'wordlist.json', 'music_attribute.json', 'music_ai_section.json', 'music_usbsetting.json', 'music_order.json']:
+                    continue
+                full_path = os.path.join(path, name)
+                if os.path.isfile(full_path):
+                    encryption.save_file(
+                        file=full_path, #type: ignore
+                        outdir=full_path,
+                        encrypt=True,
+                    )
+
+        

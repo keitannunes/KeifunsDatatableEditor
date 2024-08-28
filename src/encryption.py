@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import padding
 from argparse import ArgumentParser
 from enum import Enum
 import binascii
-from src import config
+import config
 
 
 class Keys(Enum):
