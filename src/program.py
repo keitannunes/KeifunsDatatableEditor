@@ -1,8 +1,11 @@
 import tkinter as tk
+import os
+import sys
 from src import datatable as dt
 from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
+from src import config
 
 GENRE_MAPPING = {
     "0. J-POP": 0,
@@ -14,6 +17,11 @@ GENRE_MAPPING = {
     "6. バラエティ": 6,
     "7. クラシック": 7,
 }
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path) #type: ignore
+    return os.path.join(os.path.abspath("."), relative_path)
 
 class Program:
     window: tk.Tk
@@ -83,8 +91,11 @@ class Program:
     #Checkbutton
     new_checkbutton: tk.Checkbutton
     papamama_checkbutton: tk.Checkbutton
+    branch_spike_frames: List[tk.Frame]
     branch_checkbuttons: List[tk.Checkbutton]
     branch_values: List[tk.BooleanVar]
+    spike_on_checkbuttons: List[tk.Checkbutton]
+    spike_on_values: List[tk.BooleanVar]
     ai_hard_checkbuttons: List[tk.Checkbutton]
     ai_hard_values: List[tk.BooleanVar] 
 
@@ -121,13 +132,14 @@ class Program:
     previous_language: int
     datatable: dt.Datatable
     song_info: dt.Song
+    initial: bool
 
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("Keifun's Datatable Editor")
         #self.window.geometry("1280x720")  # Set window size to 720p
 
-        img = Image.open("src/assets/icon.png")  # Replace with the path to your .png file
+        img = Image.open(resource_path("src/assets/icon.png"))  # Replace with the path to your .png file
         icon = ImageTk.PhotoImage(img)
 
         # Set the window icon
@@ -141,6 +153,8 @@ class Program:
         self.file_menu.add_command(label="Save Datatable", accelerator="Ctrl+S", command=self.save_datatable)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="New Song", accelerator="Ctrl+N", command=self.on_new_song) 
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Configure Keys", accelerator="Ctrl+,", command=self.create_config_window)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.window.quit)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
@@ -157,6 +171,7 @@ class Program:
 
         self.window.bind("<Control-n>", self.on_new_song) #type: ignore
         self.window.bind("<Control-o>", self.open_datatable) #type: ignore
+        self.window.bind("<Control-,>", self.create_config_window) #type: ignore
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
         self.songid_entry = tk.Entry(self.window)
@@ -266,8 +281,12 @@ class Program:
         self.fuusen_total_labels = list()
         self.ai_sections_labels = list()
 
+        self.branch_spike_frames = list()
+
         self.branch_checkbuttons = list()
         self.branch_values =  [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
+        self.spike_on_checkbuttons = list()
+        self.spike_on_values =  [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
         self.star_spinboxes = list()
         self.star_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.shinuchi_spinboxes = list()
@@ -308,7 +327,9 @@ class Program:
             self.fuusen_total_labels[i].grid(row=11, column=0)
             self.ai_sections_labels[i].grid(row=13, column=0)
 
-            self.branch_checkbuttons.append(tk.Checkbutton(self.difficulty_info_sub_frames[i], text="Branch", variable=self.branch_values[i], width=20, anchor='w')) 
+            self.branch_spike_frames.append(tk.Frame(self.difficulty_info_sub_frames[i]))
+            self.branch_checkbuttons.append(tk.Checkbutton(self.branch_spike_frames[i], text="Branch", variable=self.branch_values[i], width=7, anchor='w')) 
+            self.spike_on_checkbuttons.append(tk.Checkbutton(self.branch_spike_frames[i], text="Spike On", variable=self.spike_on_values[i], width=7, anchor='w')) 
             self.star_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=10, textvariable=self.star_values[i]))
             self.shinuchi_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_values[i]))
             self.shinuchi_score_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_score_values[i]))
@@ -327,8 +348,10 @@ class Program:
             if i >= 3:
                 self.ai_hard_checkbuttons.append(tk.Checkbutton(self.ai_sections_frames[i], text="Hard", variable=self.ai_hard_values[i-3]))
                 self.ai_hard_checkbuttons[i-3].grid(row=0, column=3)
-
+            
+            self.branch_spike_frames[i].grid(row=0, column=0)
             self.branch_checkbuttons[i].grid(row=0, column=0)
+            self.spike_on_checkbuttons[i].grid(row=0, column=1)
             self.star_spinboxes[i].grid(row=2, column=0)
             self.shinuchi_spinboxes[i].grid(row=4, column=0)
             self.shinuchi_score_spinboxes[i].grid(row=6, column=0)
@@ -345,6 +368,8 @@ class Program:
 
         self.current_songid = ''
         self.previous_language = 0
+        self.initial = True
+        self.disable_all_widgets(self.window)
         self.song_info = dt.Song()
 
     def open_musicorder_window(self):
@@ -382,7 +407,29 @@ class Program:
         self.music_order_submit_button = tk.Button(self.music_order_button_frame, text="Update", command=self.on_music_order_submit)
         self.music_order_submit_button.grid(row=0, column=0)
 
+    def disable_all_widgets(self, parent):
+        for child in parent.winfo_children():
+            if child == self.songid_entry:
+                continue 
+            if isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
+                child.config(state="disabled")
+            elif isinstance(child, (tk.Frame, tk.LabelFrame)):
+                self.disable_all_widgets(child)  # Recurse into frames
+
+    def enable_all_widgets(self, parent):
+        for child in parent.winfo_children():
+            if child == self.songid_entry:
+                continue 
+            if isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
+                child.config(state="normal")
+            elif isinstance(child, (tk.Frame, tk.LabelFrame)):
+                self.enable_all_widgets(child)  # Recurse into frames
+
+
     def on_new_song(self, *args):
+        if not hasattr(self, 'datatable'):
+            messagebox.showerror('New Song', f'Open datatable first')
+            return
         if self.current_songid:
             try:
                 self.save_song()
@@ -426,6 +473,9 @@ class Program:
         self.songid_entry.insert(0, new_id)
         self.current_songid = new_id
         self.populate_ui(no_query=True)
+        if self.initial:
+            self.initial = False
+            self.enable_all_widgets(self.window)
 
     def check_and_confirm_uid(self, uniqueId: int) -> bool:
         """
@@ -503,6 +553,11 @@ class Program:
             return
         try:
             self.datatable = dt.Datatable(selected_directory)
+            self.song_info = dt.Song()
+            self.populate_ui(True)
+            self.songid_entry.delete(0,tk.END)
+            self.disable_all_widgets(self.window)
+            self.initial = True
             messagebox.showinfo('Import Datable', 'Import success')
         except Exception as e:
             messagebox.showerror('Import Error', f'Import Error: {e}')
@@ -510,6 +565,36 @@ class Program:
 
     def show_about(self):
         pass
+
+    def create_config_window(self, *args):
+        def submit_config():
+            datatable_key = entry_datatable_key.get()
+            fumen_key = entry_fumen_key.get()
+
+            config.config.update_config(datatable_key, fumen_key)
+            config_window.destroy()
+
+        # Create a new Toplevel window
+        config_window = tk.Toplevel()
+        config_window.grab_set()
+        config_window.title("Enter Configuration")
+
+        # Create Label and Entry for Datatable Key
+        tk.Label(config_window, text="Datatable Key:").grid(row=0, column=0, padx=10, pady=10)
+        entry_datatable_key = tk.Entry(config_window, width=70)
+        entry_datatable_key.grid(row=0, column=1, padx=10, pady=10)
+
+        # Create Label and Entry for Fumen Key
+        tk.Label(config_window, text="Fumen Key:").grid(row=1, column=0, padx=10, pady=10)
+        entry_fumen_key = tk.Entry(config_window, width=70)
+        entry_fumen_key.grid(row=1, column=1, padx=10, pady=5)
+
+        entry_datatable_key.insert(0, config.config.datatableKey)
+        entry_fumen_key.insert(0, config.config.fumenKey)
+
+        # Create Submit Button
+        submit_button = tk.Button(config_window, text="Submit", command=submit_config)
+        submit_button.grid(row=2, column=0, columnspan=2, pady=5)
 
     def save_song(self):
         #Music order will always be up-to-date so we don't have to save that here
@@ -542,6 +627,7 @@ class Program:
 
         for i in range(5):
             self.song_info.branch[i] = self.branch_values[i].get()
+            self.song_info.spike_on[i] = int(self.spike_on_values[i].get())
             self.song_info.star[i] = self.star_values[i].get()
             self.song_info.shinuti[i] = self.shinuchi_values[i].get()
             self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
@@ -553,6 +639,9 @@ class Program:
 
     def on_songid(self, event: tk.Event):
         if event.widget.get() == self.current_songid: return
+        if not hasattr(self, 'datatable'):
+            messagebox.showerror('Song Load Error', f'Song Load Error: Open datatable first')
+            return
         old_songid = self.current_songid
         self.current_songid = event.widget.get()
         if old_songid != '':
@@ -566,6 +655,9 @@ class Program:
                 return
         try:
             self.populate_ui()
+            if self.initial:
+                self.initial = False
+                self.enable_all_widgets(self.window)
         except Exception as e:
             messagebox.showerror('Song Load Error', f'Song Load Error: {e}')
             self.current_songid = old_songid
@@ -591,6 +683,7 @@ class Program:
         if not no_query:
             self.song_info = self.datatable.get_song_info(self.current_songid)
 
+        self.enable_all_widgets(self.window)
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)
         self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)
@@ -599,6 +692,7 @@ class Program:
         self.papamama_var.set(self.song_info.papamama)
 
         for i in range(5):
+            self.spike_on_values[i].set(bool(self.song_info.spike_on[i]))
             self.branch_values[i].set(self.song_info.branch[i])
             self.star_values[i].set(self.song_info.star[i])
             self.shinuchi_values[i].set(self.song_info.shinuti[i])

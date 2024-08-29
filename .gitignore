@@ -3,3 +3,6 @@ datatable
 .idea
 config.json
 __pycache__
+dist
+build
+*.exe

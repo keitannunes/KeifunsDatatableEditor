@@ -37,8 +37,8 @@ class Song:
     onpu_num: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     renda_time: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     fuusen_total: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    spike_on: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     music_ai_section: List[int] = field(default_factory=lambda: [5, 5, 5, 5, 5])
-
     aiOniLevel11: str = ""
     aiUraLevel11: str = ""
     musicOrder: List[int] = field(default_factory=lambda: [0, -1, -1, -1, -1, -1, -1, -1])
@@ -107,6 +107,11 @@ class MusicinfoItem:
     fuusenTotalHard: int = 0
     fuusenTotalMania: int = 0
     fuusenTotalUra: int = 0
+    spikeOnEasy: int = 0
+    spikeOnNormal: int = 0
+    spikeOnHard: int = 0
+    spikeOnOni: int = 0
+    spikeOnUra: int = 0
 
 
 @dataclass
@@ -114,7 +119,7 @@ class MusicAttributeItem:
     id: str = ""
     uniqueId: int = 0
     new: bool = False
-    canPlayUra: bool = False
+    canPlayUra: bool = False #not needed for 39.06 but flappy moment
     doublePlay: bool = False
     tag1: str = ""
     tag2: str = ""
@@ -126,8 +131,8 @@ class MusicAttributeItem:
     tag8: str = ""
     tag9: str = ""
     tag10: str = ""
-    ensoPartsID1: int = 0 #TODO: If 0, don't write back into JSON
-    ensoPartsID2: int = 0 #TODO: If 0, don't write back into JSON
+    ensoPartsID1: int = 0
+    ensoPartsID2: int = 0
     donBg1p: str = ""
     donBg2p: str = ""
     dancerDai: str = ""
@@ -202,9 +207,10 @@ class Datatable:
         if not os.path.exists(self.filepath):
             os.makedirs(self.filepath)
         encryption.type = encryption.Keys.Datatable
+        files_to_find = ['musicinfo.bin', 'wordlist.bin', 'music_attribute.bin', 'music_ai_section.bin', 'music_usbsetting.bin', 'music_order.bin']
         for path, subdirs, files in os.walk(import_path):
             for name in files:
-                if name not in ['musicinfo.bin', 'wordlist.bin', 'music_attribute.bin', 'music_ai_section.bin', 'music_usbsetting.bin', 'music_order.bin']:
+                if name not in files_to_find:
                     continue
                 full_path = os.path.join(path, name)
                 if os.path.isfile(full_path):
@@ -213,6 +219,9 @@ class Datatable:
                         outdir=os.path.join(self.filepath, name),
                         encrypt=False,
                     )
+                files_to_find.remove(name)
+        if len(files_to_find) > 0:
+            raise Exception(f"Couldn't find: {files_to_find}")
         self.indices = dict()
         self.uid_musicinfo_index_mapping = dict()
 
@@ -365,6 +374,13 @@ class Datatable:
                 musicinfo_item.fuusenTotalMania, 
                 musicinfo_item.fuusenTotalUra
             ],
+            spike_on = [
+                musicinfo_item.spikeOnEasy,
+                musicinfo_item.spikeOnNormal,
+                musicinfo_item.spikeOnHard,
+                musicinfo_item.spikeOnOni,
+                musicinfo_item.spikeOnUra
+            ],
             music_ai_section = [
                 music_ai_section_item.easy, 
                 music_ai_section_item.normal, 
@@ -396,7 +412,9 @@ class Datatable:
 
             #Append each item
 
-            for i in range(3): self.wordlist.append(WordlistItem())
+            self.wordlist.append(WordlistItem(key=f'song_{song_info.id}'))
+            self.wordlist.append(WordlistItem(key=f'song_sub_{song_info.id}'))
+            self.wordlist.append(WordlistItem(key=f'song_detail_{song_info.id}'))
             self.musicinfo.append(MusicinfoItem(id=song_info.id, uniqueId=song_info.uniqueId))
             self.music_attribute.append(MusicAttributeItem(id=song_info.id, uniqueId=song_info.uniqueId))
             self.music_ai_section.append(MusicAISectionItem(id=song_info.id, uniqueId=song_info.uniqueId))
@@ -459,6 +477,10 @@ class Datatable:
         # For fuusen_total
         for i, attribute in enumerate(['fuusenTotalEasy', 'fuusenTotalNormal', 'fuusenTotalHard', 'fuusenTotalMania', 'fuusenTotalUra']):
             setattr(self.musicinfo[indices.musicinfo], attribute, song_info.fuusen_total[i])
+        
+        # For spike_on
+        for i, attribute in enumerate(['spikeOnEasy', 'spikeOnNormal', 'spikeOnHard', 'spikeOnOni', 'spikeOnUra']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.spike_on[i])
         
         #For ai section
         for i, attribute in enumerate(['easy', 'normal', 'hard', 'oni', 'ura']):
@@ -663,8 +685,13 @@ class Datatable:
         with open(os.path.join(folder_path, 'wordlist.json'), 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, indent=4)
 
-        # Export music_attribute
-        items_list = [asdict(item) for item in self.music_attribute]
+        # Export music_attribute, delete canPlayUra
+        items_list = []
+        for item in self.music_attribute:
+            item_dict = asdict(item)  # Convert the dataclass instance to a dictionary
+            if 'canPlayUra' in item_dict:
+                del item_dict['canPlayUra']  # Remove the 'canPlayUra' field
+            items_list.append(item_dict)
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'music_attribute.json'), 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, indent=4)

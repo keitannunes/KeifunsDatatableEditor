@@ -10,7 +10,7 @@ from enum import Enum
 import binascii
 from src import config
 
-
+print(config.config.appdata_dir)
 class Keys(Enum):
     Datatable = config.config.datatableKey
     Fumen = config.config.fumenKey
@@ -41,14 +41,13 @@ def decrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
     # Read the IV from the first 16 bytes of the input file
     iv = read_iv_from_file(input_file)
 
-    try:
-        # Create an AES cipher object with CBC mode
-        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-        decryptor = cipher.decryptor()
-    except Exception as error:
-        print(error)
-        print("You need to set the right AES keys in the encryption.py file")
-        exit(0)
+    # Create an AES cipher object with CBC mode
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    # except Exception as error:
+    #     print(error)
+    #     print("You need to set the right AES keys in the encryption.py file")
+    #     exit(0)
 
     with open(input_file, "rb") as infile:
         # Skip the IV in the input file
@@ -83,13 +82,13 @@ def encrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
     iv = os.urandom(16)
 
     # Create an AES cipher object with CBC mode
-    try:
-        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-        encryptor = cipher.encryptor()
-    except Exception as error:
-        print(error)
-        print("You need to set the right AES keys in the encryption.py file")
-        exit(0)
+    # try:
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    # except Exception as error:
+    #     print(error)
+    #     print("You need to set the right AES keys in the encryption.py file")
+    #     exit(0)
 
     with open(input_file, "rb") as infile:
         # Read the entire file into memory
