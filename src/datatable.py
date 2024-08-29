@@ -206,7 +206,6 @@ class Datatable:
         self.filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datatable')
         if not os.path.exists(self.filepath):
             os.makedirs(self.filepath)
-        encryption.type = encryption.Keys.Datatable
         files_to_find = ['musicinfo.bin', 'wordlist.bin', 'music_attribute.bin', 'music_ai_section.bin', 'music_usbsetting.bin', 'music_order.bin']
         for path, subdirs, files in os.walk(import_path):
             for name in files:
@@ -217,7 +216,7 @@ class Datatable:
                     encryption.save_file(
                         file=full_path, #type: ignore
                         outdir=os.path.join(self.filepath, name),
-                        encrypt=False,
+                        encrypt=False
                     )
                 files_to_find.remove(name)
         if len(files_to_find) > 0:
@@ -719,7 +718,6 @@ class Datatable:
         with open(os.path.join(folder_path, 'music_order.json'), 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, indent=4)
 
-        encryption.type = encryption.Keys.Datatable
         for path, subdirs, files in os.walk(folder_path):
             for name in files:
                 if name not in ['musicinfo.json', 'wordlist.json', 'music_attribute.json', 'music_ai_section.json', 'music_usbsetting.json', 'music_order.json']:

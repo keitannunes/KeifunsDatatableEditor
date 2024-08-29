@@ -6,14 +6,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from argparse import ArgumentParser
-from enum import Enum
 import binascii
 from src import config
-
-print(config.config.appdata_dir)
-class Keys(Enum):
-    Datatable = config.config.datatableKey
-    Fumen = config.config.fumenKey
+from dataclasses import dataclass
 
 
 def read_iv_from_file(file_path):
@@ -34,9 +29,9 @@ def remove_pkcs7_padding(data):
     return unpadder.update(data) + unpadder.finalize()
 
 
-def decrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
+def decrypt_file(input_file, is_fumen):
     # Convert the key from hex to bytes
-    key = binascii.unhexlify(Keys(key_type.value).value)
+    key = binascii.unhexlify(config.config.fumenKey if is_fumen else config.config.datatableKey)
 
     # Read the IV from the first 16 bytes of the input file
     iv = read_iv_from_file(input_file)
@@ -74,9 +69,9 @@ def isJson(file: bytes):
         return False
 
 
-def encrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
+def encrypt_file(input_file, is_fumen):
     # Convert the key from hex to bytes
-    key = binascii.unhexlify(Keys(key_type.value).value)
+    key = binascii.unhexlify(config.config.fumenKey if is_fumen else config.config.datatableKey)
 
     # Generate a random 128-bit IV
     iv = os.urandom(16)
@@ -105,11 +100,11 @@ def encrypt_file(input_file, key_type: Keys = Keys(Keys.Datatable)):
     return iv + encrypted_data
 
 
-def save_file(file: bytes, outdir: str, encrypt: bool):
+def save_file(file: bytes, outdir: str, encrypt: bool, is_fumen: bool = False):
     fileContent = (
-        decrypt_file(input_file=file, key_type=type)
+        decrypt_file(input_file=file, is_fumen=is_fumen)
         if not encrypt
-        else encrypt_file(input_file=file, key_type=type)
+        else encrypt_file(input_file=file, is_fumen=is_fumen)
     )
 
     if isJson(fileContent):
@@ -123,66 +118,3 @@ def save_file(file: bytes, outdir: str, encrypt: bool):
 
     with open(outdir, "wb") as outfile:
         outfile.write(fileContent)
-
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument(
-        "-i",
-        "--input",
-        help="Input file / folder",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        help="Output file / folder",
-    )
-    parser.add_argument(
-        "-e",
-        "--enc",
-        action="store_true",
-        default=False,
-        help="Use this flag to encrypt a file",
-    )
-    parser.add_argument(
-        "-t",
-        "--fumen",
-        action="store_true",
-        default=False,
-        help="Datatable is default, use this flag for Fumen",
-    )
-    args = parser.parse_args()
-
-    if not args.input:
-        print("Missing input file, pass the argument --help for help")
-        exit(0)
-
-    if not args.output:
-        print("Missing output file, pass the argument --help for help")
-        exit(0)
-
-    type = Keys.Datatable if not args.fumen else Keys.Fumen
-
-    if os.path.isdir(args.input):
-        for path, subdirs, files in os.walk(args.input):
-            for name in files:
-                full_path = os.path.join(path, name)
-                relative_path = os.path.relpath(full_path, args.input)
-                outpath = os.path.join(args.output, relative_path)
-                outdir = os.path.dirname(outpath)
-
-                Path(outdir).mkdir(parents=True, exist_ok=True)
-
-                if os.path.isfile(full_path):
-                    save_file(
-                        file=full_path,
-                        outdir=outpath,
-                        encrypt=False if not args.enc else True,
-                    )
-
-    else:
-        save_file(
-            file=args.input,
-            outdir=args.output,
-            encrypt=False if not args.enc else True,
-        )
