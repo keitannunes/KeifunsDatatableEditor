@@ -34,7 +34,8 @@ class Program:
     #Frames
     song_details_frame: tk.LabelFrame
     language_frame: tk.Frame
-    difficulty_info_frame: tk.LabelFrame
+    difficulty_info_label_frame: tk.LabelFrame
+    difficulty_info_frame: tk.Frame
     difficulty_info_sub_frames: List[tk.LabelFrame]
 
     #Labels
@@ -45,6 +46,7 @@ class Program:
     unique_id_label: tk.Label
     genre_label: tk.Label
     song_filename_label: tk.Label
+    spike_on_labels: List[tk.Label]
     star_labels: List[tk.Label]
     shinuchi_labels: List[tk.Label]
     shinuchi_score_labels: List[tk.Label]
@@ -94,8 +96,8 @@ class Program:
     branch_spike_frames: List[tk.Frame]
     branch_checkbuttons: List[tk.Checkbutton]
     branch_values: List[tk.BooleanVar]
-    spike_on_checkbuttons: List[tk.Checkbutton]
-    spike_on_values: List[tk.BooleanVar]
+    spike_on_spinboxes: List[tk.Spinbox]
+    spike_on_values: List[tk.IntVar]
     ai_hard_checkbuttons: List[tk.Checkbutton]
     ai_hard_values: List[tk.BooleanVar] 
 
@@ -133,6 +135,7 @@ class Program:
     datatable: dt.Datatable
     song_info: dt.Song
     initial: bool
+    duet_change_ignore_Flag: bool #I absolutely fucking hate this variable; Theres definitely a better solution that my retarded ass cannot think of
 
     def __init__(self):
         self.window = tk.Tk()
@@ -263,8 +266,15 @@ class Program:
 
 
         ### Difficulty Info ###
-        self.difficulty_info_frame = tk.LabelFrame(self.window, text="Difficulty Info", padx=20, pady=20)
-        self.difficulty_info_frame.grid(row=4, column=0)
+        self.difficulty_info_label_frame = tk.LabelFrame(self.window, text="Difficulty Info", padx=20, pady=10)
+        self.difficulty_info_label_frame.grid(row=4, column=0)
+        self.show_duet_var = tk.BooleanVar(value=False)
+        self.show_duet_var.trace_add("write", self.on_duet_change)
+        self.show_duet_checkbutton = tk.Checkbutton(self.difficulty_info_label_frame, text="Show Duet Values (leave all at 0 to auto-fill with original values)", variable=self.show_duet_var, anchor="w", width=134)
+        self.show_duet_checkbutton.grid(row=0, column=0)    
+        self.difficulty_info_frame = tk.Frame(self.difficulty_info_label_frame)
+        self.difficulty_info_frame.grid(row=1, column=0)
+
         self.difficulty_info_sub_frames = [
             tk.LabelFrame(self.difficulty_info_frame, text="Easy", padx=10, pady=10),
             tk.LabelFrame(self.difficulty_info_frame, text="Normal", padx=10, pady=10),
@@ -273,6 +283,7 @@ class Program:
             tk.LabelFrame(self.difficulty_info_frame, text="Ura", padx=10, pady=10),
         ]
 
+        self.spike_on_labels = list()
         self.star_labels = list()
         self.shinuchi_labels = list()
         self.shinuchi_score_labels = list()
@@ -285,8 +296,8 @@ class Program:
 
         self.branch_checkbuttons = list()
         self.branch_values =  [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
-        self.spike_on_checkbuttons = list()
-        self.spike_on_values =  [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
+        self.spike_on_spinboxes = list()
+        self.spike_on_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.star_spinboxes = list()
         self.star_values =  [tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar(), tk.IntVar()]
         self.shinuchi_spinboxes = list()
@@ -309,7 +320,7 @@ class Program:
         self.ai_hard_values = [tk.BooleanVar(), tk.BooleanVar()]
 
         for i in range(5):
-            self.difficulty_info_sub_frames[i].grid(row=0, column=i)
+            self.difficulty_info_sub_frames[i].grid(row=1, column=i)
             
             self.star_labels.append(tk.Label(self.difficulty_info_sub_frames[i], text="Star Difficulty:", anchor="w", width=20))
             self.shinuchi_labels.append(tk.Label(self.difficulty_info_sub_frames[i], text="Shinuchi:", anchor="w", width=20))
@@ -329,7 +340,10 @@ class Program:
 
             self.branch_spike_frames.append(tk.Frame(self.difficulty_info_sub_frames[i]))
             self.branch_checkbuttons.append(tk.Checkbutton(self.branch_spike_frames[i], text="Branch", variable=self.branch_values[i], width=7, anchor='w')) 
-            self.spike_on_checkbuttons.append(tk.Checkbutton(self.branch_spike_frames[i], text="Spike On", variable=self.spike_on_values[i], width=7, anchor='w')) 
+            self.spike_on_spinboxes.append(tk.Spinbox(self.branch_spike_frames[i], textvariable=self.spike_on_values[i], width=2, from_=0, to=9)) 
+
+            self.spike_on_labels.append(tk.Label(self.branch_spike_frames[i], text="Spike On"))
+
             self.star_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=10, textvariable=self.star_values[i]))
             self.shinuchi_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_values[i]))
             self.shinuchi_score_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_score_values[i]))
@@ -351,7 +365,8 @@ class Program:
             
             self.branch_spike_frames[i].grid(row=0, column=0)
             self.branch_checkbuttons[i].grid(row=0, column=0)
-            self.spike_on_checkbuttons[i].grid(row=0, column=1)
+            self.spike_on_spinboxes[i].grid(row=0, column=1)
+            self.spike_on_labels[i].grid(row=0, column=2)
             self.star_spinboxes[i].grid(row=2, column=0)
             self.shinuchi_spinboxes[i].grid(row=4, column=0)
             self.shinuchi_score_spinboxes[i].grid(row=6, column=0)
@@ -367,6 +382,7 @@ class Program:
                 widget.grid_configure(padx=5, pady=1)
 
         self.current_songid = ''
+        self.duet_change_ignore_Flag = False
         self.previous_language = 0
         self.initial = True
         self.disable_all_widgets(self.window)
@@ -554,6 +570,7 @@ class Program:
         try:
             self.datatable = dt.Datatable(selected_directory)
             self.song_info = dt.Song()
+            self.current_songid = ""
             self.populate_ui(True)
             self.songid_entry.delete(0,tk.END)
             self.disable_all_widgets(self.window)
@@ -629,12 +646,17 @@ class Program:
             self.song_info.branch[i] = self.branch_values[i].get()
             self.song_info.spike_on[i] = int(self.spike_on_values[i].get())
             self.song_info.star[i] = self.star_values[i].get()
-            self.song_info.shinuti[i] = self.shinuchi_values[i].get()
-            self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
+            if self.show_duet_var.get():
+                self.song_info.shinuti_duet[i] = self.shinuchi_values[i].get()
+                self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
+            else:
+                self.song_info.shinuti[i] = self.shinuchi_values[i].get()
+                self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
             self.song_info.onpu_num[i] = self.onpu_num_values[i].get()
             self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
             self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
             self.song_info.music_ai_section[i] = self.ai_sections_values[i].get()
+        print(self.song_info)
         self.datatable.set_song_info(self.song_info)
 
     def on_songid(self, event: tk.Event):
@@ -671,6 +693,27 @@ class Program:
         self.previous_language = self.language_value.get()
         self.poplate_wordlist_vars()
 
+    def on_duet_change(self, *args):
+        if self.duet_change_ignore_Flag: return #Ignore when data_load sets duet to false
+        duet = self.show_duet_var.get()
+        for i in range(5):
+            self.shinuchi_labels[i].config(text = "Shinuchi Duet:" if duet else "Shinuchi:")
+            self.shinuchi_score_labels[i].config(text = "Shinuchi Score Duet:" if duet else "Shinuchi Score:")
+            if duet:
+                #Normal -> Duet
+                self.song_info.shinuti[i] = self.shinuchi_values[i].get()
+                self.shinuchi_values[i].set(self.song_info.shinuti_duet[i])
+                self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
+                self.shinuchi_score_values[i].set(self.song_info.shinuti_score_duet[i])
+            else:
+                #Duet -> Normal
+                self.song_info.shinuti_duet[i] = self.shinuchi_values[i].get()
+                self.shinuchi_values[i].set(self.song_info.shinuti[i])
+                self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
+                self.shinuchi_score_values[i].set(self.song_info.shinuti_score[i])
+                
+
+
     def on_music_order_submit(self):
         for i, display in enumerate(self.music_order_genre_display_var):
             if display.get():
@@ -684,6 +727,9 @@ class Program:
             self.song_info = self.datatable.get_song_info(self.current_songid)
 
         self.enable_all_widgets(self.window)
+        self.duet_change_ignore_Flag = True
+        self.show_duet_var.set(False)
+        self.duet_change_ignore_Flag = False
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)
         self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)

@@ -29,11 +29,12 @@ class Song:
     songFileName: str = ""
     new: bool = False
     papamama: bool = False
-
     branch: List[bool] = field(default_factory=lambda: [False, False, False, False, False])
     star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     shinuti: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     shinuti_score: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    shinuti_duet: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    shinuti_score_duet: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     onpu_num: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     renda_time: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     fuusen_total: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
@@ -352,6 +353,21 @@ class Datatable:
                 musicinfo_item.shinutiScoreMania, 
                 musicinfo_item.shinutiScoreUra
             ],
+            shinuti_duet = [
+                musicinfo_item.shinutiEasyDuet, 
+                musicinfo_item.shinutiNormalDuet, 
+                musicinfo_item.shinutiHardDuet, 
+                musicinfo_item.shinutiManiaDuet, 
+                musicinfo_item.shinutiUraDuet
+            ],
+            shinuti_score_duet = [
+                musicinfo_item.shinutiScoreEasyDuet, 
+                musicinfo_item.shinutiScoreNormalDuet, 
+                musicinfo_item.shinutiScoreHardDuet, 
+                musicinfo_item.shinutiScoreManiaDuet, 
+                musicinfo_item.shinutiScoreUraDuet
+            ],
+            
             onpu_num = [
                 musicinfo_item.easyOnpuNum, 
                 musicinfo_item.normalOnpuNum, 
@@ -455,15 +471,30 @@ class Datatable:
         for i, attribute in enumerate(['shinutiEasy', 'shinutiNormal', 'shinutiHard', 'shinutiMania', 'shinutiUra']):
             setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti[i])
 
-        for i, attribute in enumerate(['shinutiEasyDuet', 'shinutiNormalDuet', 'shinutiHardDuet', 'shinutiManiaDuet', 'shinutiUraDuet']):
-            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti[i])
 
         # For shinuti_score
         for i, attribute in enumerate(['shinutiScoreEasy', 'shinutiScoreNormal', 'shinutiScoreHard', 'shinutiScoreMania', 'shinutiScoreUra']):
             setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti_score[i])
 
+        # For Duet
+
+        duet_off = True
+
+        for i in range(5):
+            if not (
+                (song_info.shinuti[i] == song_info.shinuti_duet[i] and 
+                song_info.shinuti_score[i] == song_info.shinuti_score_duet[i]) or 
+                (song_info.shinuti_duet[i] == 0 and song_info.shinuti_score_duet[i] == 0)
+            ):
+                duet_off = False  # Set duet_off to False if any condition fails
+                break  # No need to continue checking
+        
+
+        for i, attribute in enumerate(['shinutiEasyDuet', 'shinutiNormalDuet', 'shinutiHardDuet', 'shinutiManiaDuet', 'shinutiUraDuet']):
+            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti if duet_off else song_info.shinuti_duet)[i])
+
         for i, attribute in enumerate(['shinutiScoreEasyDuet', 'shinutiScoreNormalDuet', 'shinutiScoreHardDuet', 'shinutiScoreManiaDuet', 'shinutiScoreUraDuet']):
-            setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti_score[i])
+            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti_score if duet_off else song_info.shinuti_score_duet)[i])
 
         # For onpu_num
         for i, attribute in enumerate(['easyOnpuNum', 'normalOnpuNum', 'hardOnpuNum', 'maniaOnpuNum', 'uraOnpuNum']):
