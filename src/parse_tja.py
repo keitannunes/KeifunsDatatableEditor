@@ -9,6 +9,7 @@ contact @keifunky on discord.
 import re
 from dataclasses import dataclass, field
 from typing import List, Dict
+from math import ceil, floor
 HEADER_GLOBAL = [
     'TITLE',
     'SUBTITLE',
@@ -326,7 +327,7 @@ def pulse_to_time(events, objects):
 
                 passed_beat += beat
                 passed_time += time
-                bpm = int(event['value'])
+                bpm = float(event['value'])
 
             eidx += 1
             event = events[eidx] if eidx < len(events) else None
@@ -528,22 +529,23 @@ class SongData:
 
 def parse_and_get_data(tja_file: str):
     ret = SongData()
-    with open(tja_file, 'r') as file:
+    with open(tja_file, 'r', encoding="utf-8") as file:
         parsed = parse_tja(file.read())
         ret.title = parsed['headers']['title']
-        ret.sub = parsed['headers']['subtitle']
+        sub = parsed['headers']['subtitle']
+        ret.sub = sub[2::] if sub.startswith('--') else sub 
         for i in parsed['courses'].keys():
             ret.star[i] = parsed['courses'][i]['headers']['level']
             stats = get_statistics(convert_to_timed(parsed['courses'][i]))
             ret.onpu_num[i] = stats['totalCombo']
             ret.fuusen_total[i] = sum(x[1] for x in stats['balloons'])
             ret.renda_time[i] = sum(stats['rendas'])
-            ret.shinuti[i] = round(100000.0 / ret.onpu_num[i]) * 10
-            ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i])
+
+            #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
+            ret.shinuti[i] = floor(100000.0 / ret.onpu_num[i]) * 10 
+            ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
         return ret
             
-        
-
-
+    
 if __name__ == '__main__':
-    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\sd.tja'))
+    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\The Future of the Taiko Drum.tja'))

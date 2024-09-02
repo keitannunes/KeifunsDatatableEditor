@@ -5,7 +5,7 @@ from src import datatable as dt
 from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
-from src import config
+from src import config, parse_tja
 
 GENRE_MAPPING = {
     "0. J-POP": 0,
@@ -156,6 +156,7 @@ class Program:
         self.file_menu.add_command(label="Save Datatable", accelerator="Ctrl+S", command=self.save_datatable)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="New Song", accelerator="Ctrl+N", command=self.on_new_song) 
+        self.file_menu.add_command(label="New Song From TJA", accelerator="Ctrl+Shift+N", command=self.on_new_song_tja) 
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Configure Keys", accelerator="Ctrl+,", command=self.create_config_window)
         self.file_menu.add_separator()
@@ -173,8 +174,10 @@ class Program:
         #Bind keys
 
         self.window.bind("<Control-n>", self.on_new_song) #type: ignore
+        self.window.bind("<Control-N>", self.on_new_song_tja) #type: ignore
         self.window.bind("<Control-o>", self.open_datatable) #type: ignore
         self.window.bind("<Control-,>", self.create_config_window) #type: ignore
+
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
         self.songid_entry = tk.Entry(self.window)
@@ -463,6 +466,7 @@ class Program:
         # self.new_song_id_frame.grid(row=1, column=0)
         self.new_song_id_entry = tk.Entry(self.new_song_window)
         self.new_song_id_entry.grid(row=1, column=0, padx=5)
+        self.new_song_id_entry.focus()
 
         new_id = ''
         def on_create(*args):
@@ -485,6 +489,79 @@ class Program:
 
         if not new_id: return
         self.song_info = dt.Song(id=new_id)
+        self.songid_entry.delete(0, tk.END)
+        self.songid_entry.insert(0, new_id)
+        self.current_songid = new_id
+        self.populate_ui(no_query=True)
+        if self.initial:
+            self.initial = False
+            self.enable_all_widgets(self.window)
+
+    def on_new_song_tja(self, *args): #I know a lot of the code here is mostly a copy of above but who gives
+        if not hasattr(self, 'datatable'):
+            messagebox.showerror('New Song', f'Open datatable first')
+            return
+        if self.current_songid:
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                return
+        
+        self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
+        self.new_song_window.grab_set()
+        self.new_song_window.title(f'New Song')
+
+        self.new_song_id_label = tk.Label(self.new_song_window, text="Song Id:", anchor="w", width=20)
+        self.new_song_id_label.grid(row=0, column=0)
+        # self.new_song_id_frame = tk.Frame(self.new_song_window)
+        # self.new_song_id_frame.grid(row=1, column=0)
+        self.new_song_id_entry = tk.Entry(self.new_song_window)
+        self.new_song_id_entry.grid(row=1, column=0, padx=5)
+        self.new_song_id_entry.focus()
+
+        new_id = ''
+        def on_create(*args):
+            nonlocal new_id
+            new_id_candidate = self.new_song_id_entry.get()
+            if not new_id_candidate:
+                messagebox.showerror('New Song', 'Enter a Song Id')
+                return  
+            if self.datatable.is_song_id_taken(new_id_candidate):
+                messagebox.showerror('New Song', 'Song Id already taken')
+                return
+            new_id = new_id_candidate
+            self.new_song_window.destroy()
+            
+        self.new_song_id_entry.bind('<Return>', on_create)
+        self.new_song_confirm = tk.Button(self.new_song_window, text="Create", command=on_create) #type: ignore
+        self.new_song_confirm.grid(row=1, column=1)
+
+        self.new_song_window.wait_window()
+
+        if not new_id: return
+
+        tja_path = filedialog.askopenfilename(title="Select a TJA file")
+        if not tja_path:
+            return
+        
+        try:
+            data = parse_tja.parse_and_get_data(tja_path)
+        except Exception as e:
+            messagebox.showerror('TJA Import', f'TJA Import Error: {e}')
+            return
+        
+        self.song_info = dt.Song(id=new_id, 
+                                 star=data.star,
+                                 shinuti=data.shinuti,
+                                 shinuti_score=data.shinuti_score,
+                                 onpu_num=data.onpu_num,
+                                 fuusen_total=data.fuusen_total,
+                                 renda_time=data.renda_time
+                                 )
+        
+        self.song_info.songNameList[0] = data.title
+        self.song_info.songSubList[0] = data.sub
         self.songid_entry.delete(0, tk.END)
         self.songid_entry.insert(0, new_id)
         self.current_songid = new_id
@@ -526,14 +603,12 @@ class Program:
         new_uid_entry = tk.Spinbox(new_uid_window, textvariable=new_uid_var)
         new_uid_entry.grid(row=1, column=0)
         new_uid_entry.bind('<Return>', submit)
+        new_uid_entry.focus()
         confirm_button = tk.Button(new_uid_window, text='Update', command=submit)
         confirm_button.grid(row=2, column=0)
 
         new_uid_window.wait_window()
         return ret
-
-
-
     
     def run(self):
         self.window.mainloop()
@@ -565,7 +640,6 @@ class Program:
                 return
         selected_directory = filedialog.askdirectory(title="Select an import directory")
         if not selected_directory:
-            messagebox.showerror('Import Error', f'Import Error: Select a folderpath')
             return
         try:
             self.datatable = dt.Datatable(selected_directory)
@@ -599,6 +673,7 @@ class Program:
         # Create Label and Entry for Datatable Key
         tk.Label(config_window, text="Datatable Key:").grid(row=0, column=0, padx=10, pady=10)
         entry_datatable_key = tk.Entry(config_window, width=70)
+        entry_datatable_key.focus()
         entry_datatable_key.grid(row=0, column=1, padx=10, pady=10)
 
         # Create Label and Entry for Fumen Key
@@ -656,7 +731,6 @@ class Program:
             self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
             self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
             self.song_info.music_ai_section[i] = self.ai_sections_values[i].get()
-        print(self.song_info)
         self.datatable.set_song_info(self.song_info)
 
     def on_songid(self, event: tk.Event):
@@ -712,8 +786,6 @@ class Program:
                 self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
                 self.shinuchi_score_values[i].set(self.song_info.shinuti_score[i])
                 
-
-
     def on_music_order_submit(self):
         for i, display in enumerate(self.music_order_genre_display_var):
             if display.get():
