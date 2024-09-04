@@ -847,12 +847,15 @@ class Program:
         self.previous_language = self.language_value.get()
         self.poplate_wordlist_vars()
 
+    def change_duet_label(self, duet):
+        for i in range(5):
+            self.shinuchi_labels[i].config(text = "Shinuchi Duet:" if duet else "Shinuchi:")
+            self.shinuchi_score_labels[i].config(text = "Shinuchi Score Duet:" if duet else "Shinuchi Score:")
     def on_duet_change(self, *args):
         if self.duet_change_ignore_Flag: return #Ignore when data_load sets duet to false
         duet = self.show_duet_var.get()
         for i in range(5):
-            self.shinuchi_labels[i].config(text = "Shinuchi Duet:" if duet else "Shinuchi:")
-            self.shinuchi_score_labels[i].config(text = "Shinuchi Score Duet:" if duet else "Shinuchi Score:")
+            self.change_duet_label(duet)
             if duet:
                 #Normal -> Duet
                 self.song_info.shinuti[i] = self.shinuchi_values[i].get()
@@ -879,8 +882,9 @@ class Program:
             self.song_info = self.datatable.get_song_info(self.current_songid)
 
         self.enable_all_widgets(self.window)
-        self.duet_change_ignore_Flag = True
+        self.duet_change_ignore_Flag = True #Brain cancer 2000
         self.show_duet_var.set(False)
+        self.change_duet_label(False)
         self.duet_change_ignore_Flag = False
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)
