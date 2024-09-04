@@ -8,6 +8,7 @@ import random
 import shutil
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
+from src import common
 
 #from idsp.py
 def convert_audio_to_idsp(input_file, output_file):
@@ -19,7 +20,7 @@ def convert_audio_to_idsp(input_file, output_file):
             audio.export(temp_wav_file, format="wav", bitrate="16k")
             input_file = temp_wav_file
 
-        vgaudio_cli_path = os.path.join("bin", "VGAudioCli.exe")
+        vgaudio_cli_path = common.resource_path(os.path.join("bin", "VGAudioCli.exe"))
         subprocess.run([vgaudio_cli_path, "-i", input_file, "-o", output_file], check=True)
     finally:
         shutil.rmtree(temp_folder, ignore_errors=True)
@@ -40,7 +41,7 @@ def convert_audio_to_opus(input_file, output_file):
             input_file = temp_wav_file
 
         # Path to VGAudioCli executable
-        vgaudio_cli_path = os.path.join("bin", "VGAudioCli.exe")
+        vgaudio_cli_path = common.resource_path(os.path.join("bin", "VGAudioCli.exe"))
 
         # Run VGAudioCli to convert WAV to Switch OPUS
         subprocess.run([vgaudio_cli_path, "-i", input_file, "-o", output_file, "--opusheader", "namco"], check=True)
@@ -104,7 +105,8 @@ def convert_to_mono_48k(input_file, output_file):
 
 def run_encode_tool(input_wav, output_bs):
     """Run external encode tool with specified arguments."""
-    subprocess.run(['bin/encode.exe', '0', input_wav, output_bs, '48000', '14000'])
+    
+    subprocess.run([common.resource_path(os.path.join("bin", "encode.exe")), '0', input_wav, output_bs, '48000', '14000'])
 
 def modify_bnsf_template(output_bs, output_bnsf, header_size, total_samples):
     """Modify the BNSF template file with calculated values and combine with output.bs."""
@@ -117,7 +119,7 @@ def modify_bnsf_template(output_bs, output_bnsf, header_size, total_samples):
     bs_file_size_bytes = bs_file_size.to_bytes(4, 'big')
     
     # Read BNSF template data
-    with open('templates/header.bnsf', 'rb') as template_file:
+    with open(common.resource_path('templates/header.bnsf'), 'rb') as template_file:
         bnsf_template_data = bytearray(template_file.read())
 
     # Modify BNSF template with calculated values
@@ -335,7 +337,7 @@ def modify_nus3bank_template(game, template_name, audio_file, preview_point, out
     template_folder = templates_config["template_folder"]
 
     # Read template nus3bank file from the specified game's template folder
-    template_file = os.path.join("templates", template_folder, template_config['template_file'])
+    template_file = common.resource_path(os.path.join("templates", template_folder, template_config['template_file']))
     with open(template_file, 'rb') as f:
         template_data = bytearray(f.read())
 
@@ -438,12 +440,12 @@ def convert_audio_to_nus3bank(input_audio, audio_type, game, preview_point, song
     else:
         print(f"Unsupported audio type: {audio_type}")
 
-def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: float, song_id: str):
+def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: float, song_id: str, temp_dir):
     """Custom function for KDE"""
     ogg = input_audio.endswith('.ogg')
     if ogg:
         audio = AudioSegment.from_ogg(input_audio)
-        input_audio = os.path.join('temp', f'{song_id}.wav')
+        input_audio = os.path.join(temp_dir, f'{song_id}.wav')
         audio.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
 
     idsp_audio = f'{song_id}.idsp'
@@ -455,7 +457,3 @@ def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_poin
     if ogg and os.path.exists(input_audio):
         os.remove(input_audio)
     
-
-
-if __name__ == "__main__":
-    ogg_or_wav_to_idsp_to_nus3bank(r'C:\Users\knunes\Downloads\POLARiSNAUT', r'C:\Users\knunes\Downloads\POLARiSNAUT.nusbank3', 0, 'plrsnt')

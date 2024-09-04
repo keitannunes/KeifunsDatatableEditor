@@ -5,7 +5,7 @@ from src import datatable as dt
 from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
-from src import config, parse_tja, fumen
+from src import config, parse_tja, fumen, common
 import traceback
 
 
@@ -19,11 +19,6 @@ GENRE_MAPPING = {
     "6. バラエティ": 6,
     "7. クラシック": 7,
 }
-
-def resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path) #type: ignore
-    return os.path.join(os.path.abspath("."), relative_path)
 
 class Program:
     window: tk.Tk
@@ -144,7 +139,7 @@ class Program:
         self.window.title("Keifun's Datatable Editor")
         #self.window.geometry("1280x720")  # Set window size to 720p
 
-        img = Image.open(resource_path("src/assets/icon.png"))  # Replace with the path to your .png file
+        img = Image.open(common.resource_path("src/assets/icon.png"))  # Replace with the path to your .png file
         icon = ImageTk.PhotoImage(img)
 
         # Set the window icon
@@ -564,7 +559,9 @@ class Program:
                 sound_filepath.set(filedialog.askopenfilename(title="Select a Sound file", filetypes=[("Audio Files", ".wav .ogg")]))
             
             def set_out_dir():
-                out_dir_path.set(filedialog.askdirectory(title='Export Directory'))
+                path = filedialog.askdirectory(title='Export Directory')
+                config.config.update_game_files_out_dir(path)
+                out_dir_path.set(path)
 
             def submit_config():
                 nonlocal export_complete
@@ -583,7 +580,7 @@ class Program:
             config_window.title("Generate Fumen Files")
 
             sound_filepath = tk.StringVar()
-            out_dir_path = tk.StringVar() 
+            out_dir_path = tk.StringVar(value=config.config.gameFilesOutDir) 
             preview_offset_var = tk.DoubleVar(value=0.0)
             chart_start_offset_var = tk.DoubleVar(value=0.0)
 
@@ -739,7 +736,7 @@ class Program:
             datatable_key = entry_datatable_key.get()
             fumen_key = entry_fumen_key.get()
 
-            config.config.update_config(datatable_key, fumen_key)
+            config.config.update_keys(datatable_key, fumen_key)
             config_window.destroy()
 
         # Create a new Toplevel window
