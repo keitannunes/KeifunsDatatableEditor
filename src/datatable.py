@@ -192,6 +192,7 @@ class WordlistItem:
 
 
 class Datatable:
+    """Datatable class"""
     filepath: str
     indices: Dict[str, DatatableIndices]
     uid_musicinfo_index_mapping: Dict[int, int]
@@ -201,7 +202,6 @@ class Datatable:
     music_order: List[List[MusicOrderItem]]
     music_ai_section: List[MusicAISectionItem]
     music_usbsetting: List[MusicUsbsettingItem]
-
 
     def __init__(self, import_path: str):
         self.filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datatable')
@@ -408,7 +408,7 @@ class Datatable:
             musicOrder= music_order_indices
         )
     
-    def set_song_info(self, song_info: Song):
+    def set_song_info(self, song_info: Song) -> None:
         indices: DatatableIndices
         try:
             indices = self.get_indices(song_info.id)
@@ -539,14 +539,14 @@ class Datatable:
                     # Otherwise, insert at the specific position
                     genre_list.insert(new_position, song_item)
 
-    def is_song_id_taken(self, song_id: str):
+    def is_song_id_taken(self, song_id: str) -> bool:
         if song_id in self.indices: return True
         for e in self.musicinfo:
             if e.id == song_id: return True
         return False
         
 
-    def is_uid_taken(self, uniqueId: int):
+    def is_uid_taken(self, uniqueId: int) -> bool:
         if uniqueId in self.uid_musicinfo_index_mapping:
             return True
         for i, e in enumerate(self.musicinfo):
@@ -555,7 +555,7 @@ class Datatable:
                 return True
         return False
     
-    def update_uid(self, old_uniqueId: int, new_uniqueId: int): #snake and camel case in one variable name is a first
+    def update_uid(self, old_uniqueId: int, new_uniqueId: int) -> None: #snake and camel case in one variable name is a first
         """THIS FUNCTION ASSUMES NEW UNIQUE ID IS INDEED UNIQUE!!!!!"""
         if old_uniqueId not in self.uid_musicinfo_index_mapping:
             for i, e in enumerate(self.musicinfo):
@@ -578,7 +578,7 @@ class Datatable:
         self.uid_musicinfo_index_mapping[new_uniqueId] = self.uid_musicinfo_index_mapping[old_uniqueId]
         del self.uid_musicinfo_index_mapping[old_uniqueId]
 
-    def parse_musicinfo(self):
+    def parse_musicinfo(self) -> None:
         with open(os.path.join(self.filepath, 'musicinfo.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -597,7 +597,7 @@ class Datatable:
             except TypeError as e:
                 print(f"Failed to create musicinfoItem from {item['id']}: {e}")
 
-    def parse_music_attribute(self):
+    def parse_music_attribute(self) -> None:
         with open(os.path.join(self.filepath, 'music_attribute.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -616,7 +616,7 @@ class Datatable:
             except TypeError as e:
                 print(f"Failed to create MusicAttributeItem from {item['id']}: {e}")
 
-    def parse_music_order(self):
+    def parse_music_order(self) -> None:
         with open(os.path.join(self.filepath, 'music_order.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -642,7 +642,7 @@ class Datatable:
                 print(f"Failed to create MusicOrderItem from {item.get('id', 'unknown')}: {e}")
 
         
-    def parse_music_AI_section(self):
+    def parse_music_AI_section(self) -> None:
         with open(os.path.join(self.filepath, 'music_ai_section.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -661,7 +661,7 @@ class Datatable:
             except TypeError as e:
                 print(f"Failed to create MusicAISectionItem from {item['id']}: {e}")
 
-    def parse_music_usbsetting(self):
+    def parse_music_usbsetting(self) -> None:
         with open(os.path.join(self.filepath, 'music_usbsetting.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -680,7 +680,7 @@ class Datatable:
             except TypeError as e:
                 print(f"Failed to create MusicUsbsettingItem from {item['id']}: {e}")
 
-    def parse_wordlist(self):
+    def parse_wordlist(self) -> None:
         with open(os.path.join(self.filepath, 'wordlist.json'), 'r', encoding='utf-8') as f:
             data_dict = json.load(f)  # Load JSON data as a Python dictionary
 
@@ -699,7 +699,7 @@ class Datatable:
             except TypeError as e:
                 print(f"Failed to create WordlistItem from {item['id']}: {e}")
 
-    def export_datatable(self, folder_path: str):
+    def export_datatable(self, folder_path: str) -> None:
         items_list = [asdict(item) for item in self.musicinfo]
 
         # Create the final dictionary with the structure { "items": [...] }

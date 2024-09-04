@@ -527,25 +527,46 @@ class SongData:
 
     
 
-def parse_and_get_data(tja_file: str):
+def parse_and_get_data(tja_file: str) -> SongData:
+    """Takes in a tja fname and returns a parse_tja.SongData object"""
     ret = SongData()
-    with open(tja_file, 'r', encoding="utf-8") as file:
-        parsed = parse_tja(file.read())
-        ret.title = parsed['headers']['title']
-        sub = parsed['headers']['subtitle']
-        ret.sub = sub[2::] if sub.startswith('--') else sub 
-        for i in parsed['courses'].keys():
-            ret.star[i] = parsed['courses'][i]['headers']['level']
-            stats = get_statistics(convert_to_timed(parsed['courses'][i]))
-            ret.onpu_num[i] = stats['totalCombo']
-            ret.fuusen_total[i] = sum(x[1] for x in stats['balloons'])
-            ret.renda_time[i] = sum(stats['rendas'])
+    try:
+        file = open(tja_file, encoding='utf-8')
+    except Exception:
+        print('UTF-8 decode error, trying shift JIS')
+    try:
+        file = open(tja_file, encoding='shiftjis')
+    except Exception:
+        print('ShiftJIS encoding error, trying shift_jisx0213')
+    try:
+        file = open(tja_file, encoding='shift_jisx0213')
+    except Exception:
+        print('ShiftJIS encoding error, trying shift_jis_2004')
+    try:
+        file = open(tja_file, encoding='shift_jis_2004')
+    except Exception:
+        print('ShiftJIS encoding error, trying latin-1')
+    file = open(tja_file, encoding='latin-1')
 
-            #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
-            ret.shinuti[i] = floor(100000.0 / ret.onpu_num[i]) * 10 
-            ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
-        return ret
-            
+    
+
+    parsed = parse_tja(file.read())
+    ret.title = parsed['headers']['title']
+    sub = parsed['headers']['subtitle']
+    ret.sub = sub[2::] if sub.startswith('--') else sub 
+    for i in parsed['courses'].keys():
+        ret.star[i] = parsed['courses'][i]['headers']['level']
+        stats = get_statistics(convert_to_timed(parsed['courses'][i]))
+        ret.onpu_num[i] = stats['totalCombo']
+        ret.fuusen_total[i] = sum(x[1] for x in stats['balloons'])
+        ret.renda_time[i] = sum(stats['rendas'])
+
+        #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
+        ret.shinuti[i] = floor(100_000.0 / ret.onpu_num[i]) * 10 
+        ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
+    file.close()
+    return ret
+        
     
 if __name__ == '__main__':
     print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\The Future of the Taiko Drum.tja'))

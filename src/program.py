@@ -5,7 +5,9 @@ from src import datatable as dt
 from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
-from src import config, parse_tja
+from src import config, parse_tja, fumen
+import traceback
+
 
 GENRE_MAPPING = {
     "0. J-POP": 0,
@@ -541,7 +543,7 @@ class Program:
 
         if not new_id: return
 
-        tja_path = filedialog.askopenfilename(title="Select a TJA file")
+        tja_path = filedialog.askopenfilename(title="Select a TJA file", filetypes=[("TJA File", ".tja")])
         if not tja_path:
             return
         
@@ -551,13 +553,88 @@ class Program:
             messagebox.showerror('TJA Import', f'TJA Import Error: {e}')
             return
         
+        generate_files = messagebox.askyesno("TJA Import", "Do you want to generate fumen and sound files?")
+        export_complete = False
+        if (generate_files):
+            if not config.config.fumenKey:
+                messagebox.showerror('Fumen Generate', 'Fumen Generation Error: Empty Fumen Key')
+                return
+            
+            def set_sound():
+                sound_filepath.set(filedialog.askopenfilename(title="Select a Sound file", filetypes=[("Audio Files", ".wav .ogg")]))
+            
+            def set_out_dir():
+                out_dir_path.set(filedialog.askdirectory(title='Export Directory'))
+
+            def submit_config():
+                nonlocal export_complete
+                try:
+                    fumen.convert_tja_to_fumen_files(new_id, tja_path, sound_filepath.get(), preview_offset_var.get(), chart_start_offset_var.get(), out_dir_path.get())
+                    messagebox.showinfo('Fumen Generate', 'Successfully generated files')
+                    export_complete = True
+                    config_window.destroy()
+                except Exception as e:
+                    messagebox.showerror('Fumen Generate', f'Fumen Generatation Error: {e}')
+                    traceback.print_exc()
+
+            # Create a new Toplevel window
+            config_window = tk.Toplevel()
+            config_window.grab_set()
+            config_window.title("Generate Fumen Files")
+
+            sound_filepath = tk.StringVar()
+            out_dir_path = tk.StringVar() 
+            preview_offset_var = tk.DoubleVar(value=0.0)
+            chart_start_offset_var = tk.DoubleVar(value=0.0)
+
+            tk.Label(config_window, text="TJA File:").grid(row=0, column=0, padx=10, pady=2)
+            tja_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=tk.StringVar(value=tja_path))
+            tja_entry.grid(row=1, column=0, padx=10, pady=2)
+
+            tk.Label(config_window, text="Sound File:").grid(row=2, column=0, padx=10, pady=2)
+            sound_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=sound_filepath)
+            sound_entry.grid(row=3, column=0, padx=10, pady=2)
+            sound_button = tk.Button(config_window, text="Set", command=set_sound)
+            sound_button.grid(row=3, column=1)
+
+            tk.Label(config_window, text="Export Directory:").grid(row=4, column=0, padx=10, pady=2)
+            out_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=out_dir_path)
+            out_entry.grid(row=5, column=0, padx=10, pady=2)
+            out_button = tk.Button(config_window, text="Set", command=set_out_dir)
+            out_button.grid(row=5, column=1, padx=5)
+
+            # Label and Spinbox for Preview Offset
+            tk.Label(config_window, text="Preview Offset:").grid(row=6, column=0, padx=10, pady=10)
+            preview_offset_spinbox = tk.Spinbox(
+                config_window, from_=-10.0, to=10.0, increment=0.1, format="%.1f", width=8,
+                textvariable=preview_offset_var
+            )
+            preview_offset_spinbox.grid(row=6, column=1, padx=10, pady=10)
+
+            # Label and Spinbox for Chart Start Offset
+            tk.Label(config_window, text="Chart Start Offset:").grid(row=7, column=0, padx=10, pady=10)
+            chart_start_offset_spinbox = tk.Spinbox(
+                config_window, from_=-10.0, to=10.0, increment=0.1, format="%.1f", width=8,
+                textvariable=chart_start_offset_var
+            )
+            chart_start_offset_spinbox.grid(row=7, column=1, padx=10, pady=10)
+
+            # Create Submit Button
+            generate_button = tk.Button(config_window, text="Generate", command=submit_config)
+            generate_button.grid(row=8, column=0, pady=5)
+
+            config_window.wait_window()
+            
+        if generate_files and not export_complete: return
+        
         self.song_info = dt.Song(id=new_id, 
                                  star=data.star,
                                  shinuti=data.shinuti,
                                  shinuti_score=data.shinuti_score,
                                  onpu_num=data.onpu_num,
                                  fuusen_total=data.fuusen_total,
-                                 renda_time=data.renda_time
+                                 renda_time=data.renda_time,
+                                 songFileName=f'sound/song_{new_id}'
                                  )
         
         self.song_info.songNameList[0] = data.title
