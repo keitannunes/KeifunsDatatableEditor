@@ -187,9 +187,6 @@ class WordlistItem:
     chineseTFontType: int = 2
     koreanText: str = ""
     koreanFontType: int = 3
-    chineseSText: str = ""
-    chineseSFontType: int = 4
-
 
 class Datatable:
     """Datatable class"""
@@ -318,9 +315,9 @@ class Datatable:
         return Song(
             id= id,
             uniqueId= musicinfo_item.uniqueId,
-            songNameList= [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.koreanText, wordlist_name_item.chineseSText],
-            songSubList= [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.koreanText, wordlist_sub_item.chineseSText],
-            songDetailList= [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.koreanText, wordlist_detail_item.chineseSText],
+            songNameList= [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.koreanText],
+            songSubList= [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.koreanText],
+            songDetailList= [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.koreanText],
             genreNo= musicinfo_item.genreNo,
             songFileName= musicinfo_item.songFileName,
             new= music_attribute_item.new,
@@ -436,7 +433,7 @@ class Datatable:
             self.music_usbsetting.append(MusicUsbsettingItem(id=song_info.id, uniqueId=song_info.uniqueId))
 
         # List of language attributes
-        languages = ['japaneseText', 'englishUsText', 'chineseTText', 'koreanText', 'chineseSText']
+        languages = ['japaneseText', 'englishUsText', 'chineseTText', 'koreanText']
 
         # Updating songNameList
         for i, language in enumerate(languages):
@@ -526,7 +523,7 @@ class Datatable:
             genre_list[:] = [item for item in genre_list if item.id != id]
 
         for genre_no, new_position in enumerate(song_info.musicOrder):
-            if new_position != -1:
+            if new_position > -1:
                 # Create a new MusicOrderItem for this genre if not already present
                 song_item = MusicOrderItem(genreNo=genre_no, id=song_info.id, uniqueId=song_info.uniqueId)
                 
@@ -687,17 +684,22 @@ class Datatable:
         defaults = WordlistItem().__dict__
 
         self.wordlist = []
-        # Convert the list of dictionaries to a list of Item objects
+
+        # Convert the list of dictionaries to a list of WordlistItem objects
         for item in data_dict['items']:
             try:
+                # Remove 'chineseSText' and 'chineseSFontType' if they exist in the JSON data
+                item.pop('chineseSText', None)
+                item.pop('chineseSFontType', None)
+
                 # Use dictionary unpacking with defaults
                 full_item = {**defaults, **item}
 
-                # Create the WordlistItem using the merged dictionary
+                # Create the WordlistItem using the filtered dictionary
                 wordlist_item = WordlistItem(**full_item)
                 self.wordlist.append(wordlist_item)
             except TypeError as e:
-                print(f"Failed to create WordlistItem from {item['id']}: {e}")
+                print(f"Failed to create WordlistItem from {item.get('id', 'unknown')}: {e}")
 
     def export_datatable(self, folder_path: str) -> None:
         items_list = [asdict(item) for item in self.musicinfo]
@@ -707,13 +709,13 @@ class Datatable:
 
         # Write the dictionary to a JSON file
         with open(os.path.join(folder_path, 'musicinfo.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
         
         # Export wordlist
         items_list = [asdict(item) for item in self.wordlist]
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'wordlist.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
         # Export music_attribute, delete canPlayUra
         items_list = []
@@ -724,19 +726,19 @@ class Datatable:
             items_list.append(item_dict)
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'music_attribute.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
         # Export music_ai_section
         items_list = [asdict(item) for item in self.music_ai_section]
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'music_ai_section.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
         # Export music_usbsetting
         items_list = [asdict(item) for item in self.music_usbsetting]
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'music_usbsetting.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
         
         # Flatten the list of lists for music_order
         flattened_music_order = [item for sublist in self.music_order for item in sublist]
@@ -747,7 +749,7 @@ class Datatable:
 
         # Write the flattened list to a JSON file
         with open(os.path.join(folder_path, 'music_order.json'), 'w', encoding='utf-8') as f:
-            json.dump(data_dict, f, ensure_ascii=False, indent=4)
+            json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
         for path, subdirs, files in os.walk(folder_path):
             for name in files:

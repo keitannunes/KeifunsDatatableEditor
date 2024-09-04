@@ -10,10 +10,10 @@ import traceback
 
 
 GENRE_MAPPING = {
-    "0. J-POP": 0,
+    "0. ポップス": 0,
     "1. アニメ": 1,
     "2. キッズ": 2,
-    "3. VOCALOID": 3,
+    "3. ボーカロイド™曲": 3,
     "4. ゲームミュージック": 4,
     "5. ナムコオリジナル": 5,
     "6. バラエティ": 6,
@@ -193,7 +193,7 @@ class Program:
         self.language_value.set(0)
         self.language_value.trace_add("write", self.on_language_change)
 
-        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'ko', 'zh-CN']):
+        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'ko']):
             self.language_radiobuttons.append(tk.Radiobutton(self.language_frame, text=lang, variable=self.language_value, value=i))
             self.language_radiobuttons[i].grid(row=0, column=i)
 
@@ -340,7 +340,7 @@ class Program:
 
             self.branch_spike_frames.append(tk.Frame(self.difficulty_info_sub_frames[i]))
             self.branch_checkbuttons.append(tk.Checkbutton(self.branch_spike_frames[i], text="Branch", variable=self.branch_values[i], width=7, anchor='w')) 
-            self.spike_on_spinboxes.append(tk.Spinbox(self.branch_spike_frames[i], textvariable=self.spike_on_values[i], width=2, from_=0, to=9)) 
+            self.spike_on_spinboxes.append(tk.Spinbox(self.branch_spike_frames[i], textvariable=self.spike_on_values[i], width=2, from_=0, to=99)) 
 
             self.spike_on_labels.append(tk.Label(self.branch_spike_frames[i], text="Spike On"))
 
@@ -436,7 +436,9 @@ class Program:
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
-            if isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
+            elif child == self.genre_combobox:
+                child.config(state="readonly")
+            elif isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
                 child.config(state="normal")
             elif isinstance(child, (tk.Frame, tk.LabelFrame)):
                 self.enable_all_widgets(child)  # Recurse into frames
@@ -496,8 +498,9 @@ class Program:
 
     def on_new_song_tja(self, *args): #I know a lot of the code here is mostly a copy of above but who gives
         if not hasattr(self, 'datatable'):
-            messagebox.showerror('New Song', f'Open datatable first')
-            return
+            use_without_datatable = messagebox.askokcancel('New Song from TJA','No datatable is loaded. Do you want to create fumen/sound files anyway?')
+            if not use_without_datatable:
+                return
         if self.current_songid:
             try:
                 self.save_song()
@@ -519,12 +522,12 @@ class Program:
 
         new_id = ''
         def on_create(*args):
-            nonlocal new_id
+            nonlocal new_id, use_without_datatable
             new_id_candidate = self.new_song_id_entry.get()
             if not new_id_candidate:
                 messagebox.showerror('New Song', 'Enter a Song Id')
                 return  
-            if self.datatable.is_song_id_taken(new_id_candidate):
+            if not use_without_datatable and self.datatable.is_song_id_taken(new_id_candidate):
                 messagebox.showerror('New Song', 'Song Id already taken')
                 return
             new_id = new_id_candidate
@@ -548,7 +551,10 @@ class Program:
             messagebox.showerror('TJA Import', f'TJA Import Error: {e}')
             return
         
-        generate_files = messagebox.askyesno("TJA Import", "Do you want to generate fumen and sound files?")
+        if use_without_datatable: 
+            generate_files = True
+        else:
+            generate_files = messagebox.askyesno("TJA Import", "Do you want to generate fumen and sound files?")
         export_complete = False
         if (generate_files):
             if not config.config.fumenKey:
@@ -622,7 +628,7 @@ class Program:
 
             config_window.wait_window()
             
-        if generate_files and not export_complete: return
+        if use_without_datatable or generate_files and not export_complete: return
         
         self.song_info = dt.Song(id=new_id, 
                                  star=data.star,
@@ -783,7 +789,7 @@ class Program:
         else:
             raise Exception("Invalid Genre")
         
-        if self.song_info.musicOrder[GENRE_MAPPING[genre]] == -1:
+        if self.song_info.musicOrder[GENRE_MAPPING[genre]] == -1 and not all(x == -1 for x in self.song_info.musicOrder):
             raise Exception("Music Order cannot be -1 for main genre")
 
 
