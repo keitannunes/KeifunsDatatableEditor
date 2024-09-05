@@ -7,6 +7,8 @@ from PIL import Image, ImageTk
 from typing import List
 from src import config, parse_tja, fumen, common
 import traceback
+import webbrowser
+
 
 
 GENRE_MAPPING = {
@@ -746,9 +748,8 @@ class Program:
         except Exception as e:
             messagebox.showerror('Import Error', f'Import Error: {e}')
 
-
     def show_about(self):
-        pass
+        webbrowser.open('https://github.com/keitannunes/KeifunsDatatableEditor')
 
     def create_config_window(self, *args):
         def submit_config():
