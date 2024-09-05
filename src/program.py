@@ -426,7 +426,7 @@ class Program:
 
             self.music_order_genre_order_var.append(tk.IntVar())
             self.music_order_genre_order_var[i].set(self.song_info.musicOrder[i])
-            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_var[i]))
+            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_var[i], from_=-1, to=9999))
             self.music_order_genre_order_spinboxes[i].grid(row=0, column=1)
         
         self.music_order_button_frame = tk.Frame(self.music_order_window, pady=10)
