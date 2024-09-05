@@ -831,6 +831,8 @@ class Program:
             self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
             self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
             self.song_info.music_ai_section[i] = self.ai_sections_values[i].get()
+        self.song_info.aiOniLevel11 = "o" if self.ai_hard_values[0].get() else ""
+        self.song_info.aiUraLevel11 = "o" if self.ai_hard_values[1].get() else "" #what the fuck namco
         self.datatable.set_song_info(self.song_info)
 
     def on_songid(self, event: tk.Event):
