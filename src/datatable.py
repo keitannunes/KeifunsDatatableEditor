@@ -507,7 +507,7 @@ class Datatable:
 
         #Delete from music order
         for genre_list in self.music_order:
-            genre_list[:] = [item for item in genre_list if item.id != id]
+            genre_list[:] = [item for item in genre_list if item.id != song_info.id]
 
         for genre_no, new_position in enumerate(song_info.musicOrder):
             if new_position > -1:
