@@ -175,6 +175,7 @@ class Program:
         self.window.bind("<Control-n>", self.on_new_song) #type: ignore
         self.window.bind("<Control-N>", self.on_new_song_tja) #type: ignore
         self.window.bind("<Control-o>", self.open_datatable) #type: ignore
+        self.window.bind("<Control-s>", self.save_datatable) #type: ignore
         self.window.bind("<Control-,>", self.create_config_window) #type: ignore
 
 
@@ -702,7 +703,10 @@ class Program:
     def run(self):
         self.window.mainloop()
 
-    def save_datatable(self):
+    def save_datatable(self, *args):
+        if not hasattr(self, 'datatable'):
+            messagebox.showerror('Save Datatable', 'Save Datatable Error: Open datatable first')
+            return
         if self.current_songid:
             try:
                 self.save_song()
