@@ -473,25 +473,12 @@ class Datatable:
         for i, attribute in enumerate(['shinutiScoreEasy', 'shinutiScoreNormal', 'shinutiScoreHard', 'shinutiScoreMania', 'shinutiScoreUra']):
             setattr(self.musicinfo[indices.musicinfo], attribute, song_info.shinuti_score[i])
 
-        # For Duet
-
-        duet_off = True
-
-        for i in range(5):
-            if not (
-                (song_info.shinuti[i] == song_info.shinuti_duet[i] and 
-                song_info.shinuti_score[i] == song_info.shinuti_score_duet[i]) or 
-                (song_info.shinuti_duet[i] == 0 and song_info.shinuti_score_duet[i] == 0)
-            ):
-                duet_off = False  # Set duet_off to False if any condition fails
-                break  # No need to continue checking
-        
-
+        #For Duet
         for i, attribute in enumerate(['shinutiEasyDuet', 'shinutiNormalDuet', 'shinutiHardDuet', 'shinutiManiaDuet', 'shinutiUraDuet']):
-            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti if duet_off else song_info.shinuti_duet)[i])
+            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti_duet)[i])
 
         for i, attribute in enumerate(['shinutiScoreEasyDuet', 'shinutiScoreNormalDuet', 'shinutiScoreHardDuet', 'shinutiScoreManiaDuet', 'shinutiScoreUraDuet']):
-            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti_score if duet_off else song_info.shinuti_score_duet)[i])
+            setattr(self.musicinfo[indices.musicinfo], attribute, (song_info.shinuti_score_duet)[i])
 
         # For onpu_num
         for i, attribute in enumerate(['easyOnpuNum', 'normalOnpuNum', 'hardOnpuNum', 'maniaOnpuNum', 'uraOnpuNum']):

@@ -88,6 +88,8 @@ class Program:
     fuusen_total_values: List[tk.IntVar]
 
     #Checkbutton
+    decouple_duet_checkbutton: tk.Checkbutton
+    decouple_duet_var: tk.BooleanVar
     new_checkbutton: tk.Checkbutton
     papamama_checkbutton: tk.Checkbutton
     branch_spike_frames: List[tk.Frame]
@@ -132,7 +134,7 @@ class Program:
     datatable: dt.Datatable
     song_info: dt.Song
     initial: bool
-    duet_change_ignore_Flag: bool #I absolutely fucking hate this variable; Theres definitely a better solution that my retarded ass cannot think of
+    duet_change_ignore_flag: bool #I absolutely fucking hate this variable; Theres definitely a better solution that my retarded ass cannot think of
 
     def __init__(self):
         self.window = tk.Tk()
@@ -270,8 +272,15 @@ class Program:
         self.difficulty_info_label_frame.grid(row=4, column=0)
         self.show_duet_var = tk.BooleanVar(value=False)
         self.show_duet_var.trace_add("write", self.on_duet_change)
-        self.show_duet_checkbutton = tk.Checkbutton(self.difficulty_info_label_frame, text="Show Duet Values (leave all at 0 to auto-fill with original values)", variable=self.show_duet_var, anchor="w", width=134)
-        self.show_duet_checkbutton.grid(row=0, column=0)    
+        self.decouple_duet_var = tk.BooleanVar(value=False)
+        self.decouple_duet_var.trace_add("write", self.on_decouple_duet_change)
+        self.duet_frame = tk.Frame(self.difficulty_info_label_frame)
+        self.duet_frame.grid(row=0, column=0)    
+
+        self.decouple_duet_checkbutton = tk.Checkbutton(self.duet_frame, text="Decouple Duet Values", variable=self.decouple_duet_var)
+        self.decouple_duet_checkbutton.grid(row=0, column=0)
+        self.show_duet_checkbutton = tk.Checkbutton(self.duet_frame, text="Show Duet Values", variable=self.show_duet_var, anchor="w", width=112)
+        self.show_duet_checkbutton.grid(row=0, column=1)
         self.difficulty_info_frame = tk.Frame(self.difficulty_info_label_frame)
         self.difficulty_info_frame.grid(row=1, column=0)
 
@@ -382,7 +391,7 @@ class Program:
                 widget.grid_configure(padx=5, pady=1)
 
         self.current_songid = ''
-        self.duet_change_ignore_Flag = False
+        self.duet_change_ignore_flag = False
         self.previous_language = 0
         self.initial = True
         self.disable_all_widgets(self.window)
@@ -494,7 +503,7 @@ class Program:
         self.populate_ui(no_query=True)
         if self.initial:
             self.initial = False
-            self.enable_all_widgets(self.window)
+            # self.enable_all_widgets(self.window)
 
     def on_new_song_tja(self, *args): #I know a lot of the code here is mostly a copy of above but who gives
         if not hasattr(self, 'datatable'):
@@ -648,7 +657,7 @@ class Program:
         self.populate_ui(no_query=True)
         if self.initial:
             self.initial = False
-            self.enable_all_widgets(self.window)
+            # self.enable_all_widgets(self.window)
 
     def check_and_confirm_uid(self, uniqueId: int) -> bool:
         """
@@ -801,12 +810,18 @@ class Program:
             self.song_info.branch[i] = self.branch_values[i].get()
             self.song_info.spike_on[i] = int(self.spike_on_values[i].get())
             self.song_info.star[i] = self.star_values[i].get()
-            if self.show_duet_var.get():
-                self.song_info.shinuti_duet[i] = self.shinuchi_values[i].get()
-                self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
+            if self.decouple_duet_var.get():
+                if self.show_duet_var.get():
+                    self.song_info.shinuti_duet[i] = self.shinuchi_values[i].get()
+                    self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
+                else:
+                    self.song_info.shinuti[i] = self.shinuchi_values[i].get()
+                    self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
             else:
                 self.song_info.shinuti[i] = self.shinuchi_values[i].get()
                 self.song_info.shinuti_score[i] = self.shinuchi_score_values[i].get()
+                self.song_info.shinuti_duet[i] = self.shinuchi_values[i].get()
+                self.song_info.shinuti_score_duet[i] = self.shinuchi_score_values[i].get()
             self.song_info.onpu_num[i] = self.onpu_num_values[i].get()
             self.song_info.renda_time[i] = float(self.renda_time_values[i].get())
             self.song_info.fuusen_total[i] = self.fuusen_total_values[i].get()
@@ -833,7 +848,7 @@ class Program:
             self.populate_ui()
             if self.initial:
                 self.initial = False
-                self.enable_all_widgets(self.window)
+                #self.enable_all_widgets(self.window)
         except Exception as e:
             messagebox.showerror('Song Load Error', f'Song Load Error: {e}')
             self.current_songid = old_songid
@@ -847,12 +862,19 @@ class Program:
         self.previous_language = self.language_value.get()
         self.poplate_wordlist_vars()
 
+    def on_decouple_duet_change(self, *args): 
+        if self.decouple_duet_var.get():
+            self.show_duet_checkbutton.config(state="active")
+        else:
+            self.show_duet_checkbutton.config(state="disabled")
+            if self.show_duet_var.get(): self.show_duet_var.set(False)
+
     def change_duet_label(self, duet):
         for i in range(5):
             self.shinuchi_labels[i].config(text = "Shinuchi Duet:" if duet else "Shinuchi:")
             self.shinuchi_score_labels[i].config(text = "Shinuchi Score Duet:" if duet else "Shinuchi Score:")
     def on_duet_change(self, *args):
-        if self.duet_change_ignore_Flag: return #Ignore when data_load sets duet to false
+        if self.duet_change_ignore_flag: return #Ignore when data_load sets duet to false
         duet = self.show_duet_var.get()
         for i in range(5):
             self.change_duet_label(duet)
@@ -882,10 +904,11 @@ class Program:
             self.song_info = self.datatable.get_song_info(self.current_songid)
 
         self.enable_all_widgets(self.window)
-        self.duet_change_ignore_Flag = True #Brain cancer 2000
+        self.duet_change_ignore_flag = True #Brain cancer 2000
         self.show_duet_var.set(False)
         self.change_duet_label(False)
-        self.duet_change_ignore_Flag = False
+        self.duet_change_ignore_flag = False
+        self.decouple_duet_var.set(any(self.song_info.shinuti[i] != self.song_info.shinuti_duet[i] for i in range(5)) or any(self.song_info.shinuti_score[i] != self.song_info.shinuti_score_duet[i] for i in range(5)))
         self.poplate_wordlist_vars()
         self.unique_id_var.set(self.song_info.uniqueId)
         self.genre_var.set(next((k for k, v in GENRE_MAPPING.items() if v == self.song_info.genreNo), '')) #Do not question this line of code (getting key given value)
