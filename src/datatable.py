@@ -689,9 +689,18 @@ class Datatable:
                 print(f"Failed to create WordlistItem from {item.get('id', 'unknown')}: {e}")
 
     def export_datatable(self, folder_path: str) -> None:
-        items_list = [asdict(item) for item in self.musicinfo]
+        items_list = []
+        renda_time_fields = ['rendaTimeEasy', 'rendaTimeNormal', 'rendaTimeHard', 'rendaTimeMania', 'rendaTimeUra']
 
-        # Create the final dictionary with the structure { "items": [...] }
+        for item in self.musicinfo:
+            item_dict = asdict(item)
+            
+            # Check and cast each rendaTime field
+            for field in renda_time_fields:
+                if item_dict[field].is_integer():
+                    item_dict[field] = int(item_dict[field])
+        
+            items_list.append(item_dict)
         data_dict = {"items": items_list}
 
         # Write the dictionary to a JSON file
@@ -705,6 +714,7 @@ class Datatable:
             json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
         # Export music_attribute, delete canPlayUra
+        #09/05/24: Why the fuck am I deleting this on write back and not on load?? Future me issue
         items_list = []
         for item in self.music_attribute:
             item_dict = asdict(item)  # Convert the dataclass instance to a dictionary
