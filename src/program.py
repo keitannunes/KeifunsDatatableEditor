@@ -1,3 +1,7 @@
+"""
+DANGER: No one should ever attempt to maintain this codebase
+"""
+
 import tkinter as tk
 import os
 import sys
@@ -207,69 +211,102 @@ class Program:
         self.song_details_frame = tk.LabelFrame(self.window, text="Song Details", padx=20, pady=20)
         self.song_details_frame.grid(row=3, column=0)
 
-        #Set Labels
-        self.song_name_label = tk.Label(self.song_details_frame, text="Song Name:", anchor="w", width=20)
-        self.song_name_label.grid(row=0, column=0)
-        self.song_sub_label = tk.Label(self.song_details_frame, text="Song Sub:", anchor="w", width=20)
-        self.song_sub_label.grid(row=2, column=0)
-        self.song_detail_label = tk.Label(self.song_details_frame, text="Song Detail:", anchor="w", width=20)
-        self.song_detail_label.grid(row=4, column=0)
-        self.unique_id_label = tk.Label(self.song_details_frame, text="Unique Id:", anchor="w", width=20)
-        self.unique_id_label.grid(row=6, column=0)
-        self.genre_label = tk.Label(self.song_details_frame, text="Main Genre:", anchor="w", width=20)
-        self.genre_label.grid(row=8, column=0)
-        self.song_filename_label = tk.Label(self.song_details_frame, text="Song Filename:", anchor="w", width=20)
-        self.song_filename_label.grid(row=0, column=1)
+        self.song_details_subframes = list()
+
+        for i in range(3):
+            self.song_details_subframes.append(tk.Frame(self.song_details_frame, padx=8))
+            self.song_details_subframes[i].grid(row=0, column=i, sticky="nsew")
+
+        # Make sure columns resize evenly by configuring column weights
+        self.song_details_frame.grid_columnconfigure(0, weight=1)
+        self.song_details_frame.grid_columnconfigure(1, weight=1)
+        self.song_details_frame.grid_columnconfigure(2, weight=1)
 
         # Create variables for each widget
         self.song_name_var = tk.StringVar()
+        self.song_name_font_var = tk.IntVar()
         self.song_sub_var = tk.StringVar()
+        self.song_sub_font_var = tk.IntVar()
         self.song_detail_var = tk.StringVar()
+        self.song_detail_font_var = tk.IntVar()
         self.song_filename_var = tk.StringVar()
         self.new_var = tk.BooleanVar()
         self.papamama_var = tk.BooleanVar()
         self.unique_id_var = tk.IntVar()
+        self.double_play_var = tk.BooleanVar()
         self.genre_var = tk.StringVar()
 
-        # Entry widgets bound to StringVar
-        self.song_name_entry = tk.Entry(self.song_details_frame, textvariable=self.song_name_var)
-        self.song_name_entry.grid(row=1, column=0)
+        ## COL 1 - Anchored Left and Expanded
+        self.font_label = tk.Label(self.song_details_subframes[0], text="Font")
+        self.font_label.grid(row=0, column=1, sticky="w")
+        # SONG NAME
+        self.song_name_label = tk.Label(self.song_details_subframes[0], text="Song Name:", anchor="w", width=20)
+        self.song_name_label.grid(row=0, column=0, sticky="w")
 
-        self.song_sub_entry = tk.Entry(self.song_details_frame, textvariable=self.song_sub_var)
-        self.song_sub_entry.grid(row=3, column=0)
+        self.song_name_entry = tk.Entry(self.song_details_subframes[0], textvariable=self.song_name_var)
+        self.song_name_entry.grid(row=1, column=0, sticky="ew")
+        self.song_name_font_spinbox = tk.Spinbox(self.song_details_subframes[0], from_=0, to=3, width=2, textvariable=self.song_name_font_var)
+        self.song_name_font_spinbox.grid(row=1, column=1, sticky="w")
 
-        self.song_detail_entry = tk.Entry(self.song_details_frame, textvariable=self.song_detail_var)
-        self.song_detail_entry.grid(row=5, column=0)
+        # SONG SUB
+        self.song_sub_label = tk.Label(self.song_details_subframes[0], text="Song Sub:", anchor="w", width=20)
+        self.song_sub_label.grid(row=2, column=0, sticky="w")
 
-        self.song_filename_entry = tk.Entry(self.song_details_frame, textvariable=self.song_filename_var)
-        self.song_filename_entry.grid(row=1, column=1)
+        self.song_sub_entry = tk.Entry(self.song_details_subframes[0], textvariable=self.song_sub_var)
+        self.song_sub_entry.grid(row=3, column=0, sticky="ew")
+        self.song_sub_font_spinbox = tk.Spinbox(self.song_details_subframes[0], from_=0, to=3, width=2, textvariable=self.song_sub_font_var)
+        self.song_sub_font_spinbox.grid(row=3, column=1, sticky="w")
 
-        # Checkbutton widgets bound to BooleanVar
-        self.new_checkbutton = tk.Checkbutton(self.song_details_frame, text="New", variable=self.new_var)
-        self.new_checkbutton.grid(row=2, column=1)
+        # SONG DETAIL
+        self.song_detail_label = tk.Label(self.song_details_subframes[0], text="Song Detail:", anchor="w", width=20)
+        self.song_detail_label.grid(row=4, column=0, sticky="w")
 
-        self.papamama_checkbutton = tk.Checkbutton(self.song_details_frame, text="Papamama", variable=self.papamama_var)
-        self.papamama_checkbutton.grid(row=3, column=1)
+        self.song_detail_entry = tk.Entry(self.song_details_subframes[0], textvariable=self.song_detail_var)
+        self.song_detail_entry.grid(row=5, column=0, sticky="ew")
+        self.song_detail_font_spinbox = tk.Spinbox(self.song_details_subframes[0], from_=0, to=3, width=2, textvariable=self.song_detail_font_var)
+        self.song_detail_font_spinbox.grid(row=5, column=1, sticky="w")
 
-        # Button (no variable needed, as it’s an action trigger)
-        self.music_order_button = tk.Button(self.song_details_frame, text="Set Music Order", command=self.open_musicorder_window)
-        self.music_order_button.grid(row=4, column=1)
+        ## COL 2 - Anchored Left and Expanded
+        # Unique ID
+        self.unique_id_label = tk.Label(self.song_details_subframes[1], text="Unique Id:", anchor="w", width=20)
+        self.unique_id_label.grid(row=0, column=0, sticky="w")
 
-        # Spinbox widget bound to IntVar
-        self.unique_id_spinbox = tk.Spinbox(self.song_details_frame, from_=0, to=9999, textvariable=self.unique_id_var)
-        self.unique_id_spinbox.grid(row=7, column=0)
+        self.unique_id_spinbox = tk.Spinbox(self.song_details_subframes[1], from_=0, to=9999, textvariable=self.unique_id_var)
+        self.unique_id_spinbox.grid(row=1, column=0, sticky="ew")
 
-        # Combobox widget bound to StringVar
-        self.genre_combobox = ttk.Combobox(self.song_details_frame, values=list(GENRE_MAPPING.keys()), textvariable=self.genre_var)
-        self.genre_combobox.grid(row=9, column=0)
-        
+        # Main Genre
+        self.genre_label = tk.Label(self.song_details_subframes[1], text="Main Genre:", anchor="w", width=20)
+        self.genre_label.grid(row=2, column=0, sticky="w")
 
-        #Set Padding for each element in song_details_frame
+        self.genre_combobox = ttk.Combobox(self.song_details_subframes[1], values=list(GENRE_MAPPING.keys()), textvariable=self.genre_var)
+        self.genre_combobox.grid(row=3, column=0, sticky="ew")
 
-        for widget in self.song_details_frame.winfo_children():
-            widget.grid_configure(padx=5, pady=1)
+        # Song Filename
+        self.song_filename_label = tk.Label(self.song_details_subframes[1], text="Song Filename:", anchor="w", width=20)
+        self.song_filename_label.grid(row=4, column=0, sticky="w")
 
+        self.song_filename_entry = tk.Entry(self.song_details_subframes[1], textvariable=self.song_filename_var)
+        self.song_filename_entry.grid(row=5, column=0, sticky="ew")
 
+        ## COL 3 - Anchored Left
+        self.new_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="New", variable=self.new_var)
+        self.new_checkbutton.grid(row=0, column=0, sticky="w")
+
+        self.papamama_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="Papamama", variable=self.papamama_var)
+        self.papamama_checkbutton.grid(row=1, column=0, sticky="w")
+
+        self.double_play_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="Double Play", variable=self.double_play_var)
+        self.double_play_checkbutton.grid(row=2, column=0, sticky="ew")
+    
+        self.music_order_button = tk.Button(self.song_details_subframes[2], text="Set Music Order", command=self.open_musicorder_window)
+        self.music_order_button.grid(row=3, column=0, sticky="ew")
+
+        # Make sure the subframes resize properly
+        self.song_details_subframes[0].grid_columnconfigure(0, weight=1)
+        self.song_details_subframes[1].grid_columnconfigure(0, weight=1)
+        self.song_details_subframes[2].grid_columnconfigure(0, weight=1)
+
+                
         ### Difficulty Info ###
         self.difficulty_info_label_frame = tk.LabelFrame(self.window, text="Difficulty Info", padx=20, pady=10)
         self.difficulty_info_label_frame.grid(row=4, column=0)
@@ -360,7 +397,7 @@ class Program:
             self.shinuchi_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_values[i]))
             self.shinuchi_score_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=1, to=99999999, textvariable=self.shinuchi_score_values[i]))
             self.onpu_num_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], from_=0, to=99999999, textvariable=self.onpu_num_values[i]))
-            self.renda_time_entries.append(tk.Entry(self.difficulty_info_sub_frames[i], textvariable=self.renda_time_values[i]))
+            self.renda_time_entries.append(tk.Entry(self.difficulty_info_sub_frames[i], textvariable=self.renda_time_values[i], width=22))
             self.fuusen_total_spinboxes.append(tk.Spinbox(self.difficulty_info_sub_frames[i], textvariable=self.fuusen_total_values[i], from_=0, to=99999999))
             #self.ai_sections_comboboxes.append(ttk.Combobox(self.difficulty_info_sub_frames[i], values=['3','5']))
             self.ai_sections_frames.append(tk.Frame(self.difficulty_info_sub_frames[i]))
@@ -405,35 +442,61 @@ class Program:
         self.music_order_window.grab_set()
         self.music_order_window.title(f'Music Order - {self.current_songid}')
 
-        self.music_order_genre_order_labels = list()
-        self.music_order_genre_frame = list()
-        self.music_order_genre_display_checkbuttons = list()
-        self.music_order_genre_display_var = list()
-        self.music_order_genre_order_spinboxes = list()
-        self.music_order_genre_order_var = list()
+        self.music_order_genre_order_labels = []
+        self.music_order_genre_frame = []
+        self.music_order_genre_display_checkbuttons = []
+        self.music_order_genre_display_var = []
+        self.music_order_genre_order_spinboxes = []
+        self.music_order_genre_order_var = []
+        self.music_order_genre_close_disp_type_spinbox = []
+        self.music_order_genre_close_disp_type_var = []
 
-        for i, v in enumerate(GENRE_MAPPING.keys()):
-            self.music_order_genre_order_labels.append(tk.Label(self.music_order_window, text=v, pady=5, anchor="w", width=20, padx=20))
-            self.music_order_genre_order_labels[i].grid(row=2*i, column=0)
+        # Create a frame for the entire layout to maintain alignment
+        main_frame = tk.Frame(self.music_order_window)
+        main_frame.grid(row=0, column=0, padx=5, pady=5)
 
-            self.music_order_genre_frame.append(tk.Frame(self.music_order_window))
-            self.music_order_genre_frame[i].grid(row=2*i+1, column=0)
+        # Add headers for "Order" and "CloseDispType"
+        tk.Label(main_frame, text="Order", anchor="w", width=6).grid(row=0, column=2, padx=5, pady=5)
+        tk.Label(main_frame, text="Disp Type", anchor="w", width=10).grid(row=0, column=3, padx=5, pady=5)
 
+        for i, genre in enumerate(GENRE_MAPPING.keys()):
+            # Row for genre name and checkbox
             self.music_order_genre_display_var.append(tk.BooleanVar())
-            self.music_order_genre_display_var[i].set(self.song_info.musicOrder[i] != -1)
-            self.music_order_genre_display_checkbuttons.append(tk.Checkbutton(self.music_order_genre_frame[i], variable=self.music_order_genre_display_var[i]))
-            self.music_order_genre_display_checkbuttons[i].grid(row=0, column=0)
+            self.music_order_genre_display_var[i].set(self.song_info.musicOrder[i][0] != -1)
 
+
+            # Frame to contain each genre's components
+            self.music_order_genre_frame.append(tk.Frame(main_frame))
+            self.music_order_genre_frame[i].grid(row=i+1, column=0, sticky="w", pady=5)
+
+            # Genre name label
+            self.music_order_genre_order_labels.append(tk.Label(self.music_order_genre_frame[i], text=f"{genre}:", pady=5, anchor="w", width=20))
+            self.music_order_genre_order_labels[i].grid(row=0, column=0, padx=3, sticky="w")
+
+            # Checkbox for display (placed between the genre label and the spinbox)
+            self.music_order_genre_display_checkbuttons.append(tk.Checkbutton(self.music_order_genre_frame[i], variable=self.music_order_genre_display_var[i]))
+            self.music_order_genre_display_checkbuttons[i].grid(row=0, column=1, padx=5)
+
+            # Order Spinbox
             self.music_order_genre_order_var.append(tk.IntVar())
-            self.music_order_genre_order_var[i].set(self.song_info.musicOrder[i])
-            self.music_order_genre_order_spinboxes.append(tk.Spinbox(self.music_order_genre_frame[i], textvariable=self.music_order_genre_order_var[i], from_=-1, to=9999))
-            self.music_order_genre_order_spinboxes[i].grid(row=0, column=1)
-        
-        self.music_order_button_frame = tk.Frame(self.music_order_window, pady=10)
-        self.music_order_button_frame.grid(row=2*len(GENRE_MAPPING)+1, column=0)
+            self.music_order_genre_order_var[i].set(self.song_info.musicOrder[i][0])
+            self.music_order_genre_order_spinboxes.append(tk.Spinbox(main_frame, textvariable=self.music_order_genre_order_var[i], from_=-1, to=9999, width=6))
+            self.music_order_genre_order_spinboxes[i].grid(row=i+1, column=2, padx=5, sticky="w")
+
+            # Close Disp Type Spinbox
+            self.music_order_genre_close_disp_type_var.append(tk.IntVar(value=self.song_info.musicOrder[i][1]))
+            self.music_order_genre_close_disp_type_spinbox.append(tk.Spinbox(main_frame, from_=0, to=99, width=6, textvariable=self.music_order_genre_close_disp_type_var[i]))
+            self.music_order_genre_close_disp_type_spinbox[i].grid(row=i+1, column=3, padx=5, sticky="w")
+
+        # Add the submit button at the bottom and center it
+        self.music_order_button_frame = tk.Frame(self.music_order_window, pady=5)
+        self.music_order_button_frame.grid(row=len(GENRE_MAPPING)+2, column=0, pady=5)
 
         self.music_order_submit_button = tk.Button(self.music_order_button_frame, text="Update", command=self.on_music_order_submit)
         self.music_order_submit_button.grid(row=0, column=0)
+
+        # Adjust the column stretching to resize properly
+        self.music_order_window.grid_columnconfigure(0, weight=1)
 
     def disable_all_widgets(self, parent):
         for child in parent.winfo_children():
@@ -448,7 +511,7 @@ class Program:
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
-            elif child == self.genre_combobox:
+            elif child in [self.genre_combobox, self.song_name_font_spinbox, self.song_sub_font_spinbox, self.song_detail_font_spinbox]:
                 child.config(state="readonly")
             elif isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
                 child.config(state="normal")
@@ -652,8 +715,8 @@ class Program:
                                  songFileName=f'sound/song_{new_id}'
                                  )
         
-        self.song_info.songNameList[0] = data.title
-        self.song_info.songSubList[0] = data.sub
+        self.song_info.songNameList[0] = (data.title, 0)
+        self.song_info.songSubList[0] = (data.sub, 0)
         self.songid_entry.delete(0, tk.END)
         self.songid_entry.insert(0, new_id)
         self.current_songid = new_id
@@ -793,9 +856,9 @@ class Program:
                 raise Exception("UniqueId already exists")
 
 
-        self.song_info.songNameList[self.language_value.get()] = self.song_name_var.get()
-        self.song_info.songSubList[self.language_value.get()] = self.song_sub_var.get()
-        self.song_info.songDetailList[self.language_value.get()] = self.song_detail_var.get()
+        self.song_info.songNameList[self.language_value.get()] = self.song_name_var.get(), self.song_name_font_var.get()
+        self.song_info.songSubList[self.language_value.get()] = self.song_sub_var.get(), self.song_sub_font_var.get()
+        self.song_info.songDetailList[self.language_value.get()] = self.song_detail_var.get(), self.song_detail_font_var.get()
 
         genre = self.genre_var.get()
         if genre in GENRE_MAPPING: 
@@ -810,6 +873,7 @@ class Program:
         self.song_info.songFileName = self.song_filename_var.get()
         self.song_info.new = self.new_var.get()
         self.song_info.papamama = self.papamama_var.get()
+        self.song_info.doublePlay = self.double_play_var.get()
 
         for i in range(5):
             self.song_info.branch[i] = self.branch_values[i].get()
@@ -863,9 +927,9 @@ class Program:
             self.songid_entry.insert(0, old_songid)
     
     def on_language_change(self, *args):
-        self.song_info.songNameList[self.previous_language] = self.song_name_var.get()
-        self.song_info.songSubList[self.previous_language] = self.song_sub_var.get()
-        self.song_info.songDetailList[self.previous_language] = self.song_detail_var.get()
+        self.song_info.songNameList[self.previous_language] = self.song_name_var.get(), self.song_name_font_var.get()
+        self.song_info.songSubList[self.previous_language] = self.song_sub_var.get(), self.song_sub_font_var.get()
+        self.song_info.songDetailList[self.previous_language] = self.song_detail_var.get(), self.song_detail_font_var.get()
         self.previous_language = self.language_value.get()
         self.poplate_wordlist_vars()
 
@@ -901,9 +965,9 @@ class Program:
     def on_music_order_submit(self):
         for i, display in enumerate(self.music_order_genre_display_var):
             if display.get():
-                self.song_info.musicOrder[i] = self.music_order_genre_order_var[i].get()
+                self.song_info.musicOrder[i] = self.music_order_genre_order_var[i].get(), self.music_order_genre_close_disp_type_var[i].get()
             else:
-                self.song_info.musicOrder[i] = -1
+                self.song_info.musicOrder[i] = -1, 0
         self.music_order_window.destroy()
 
     def populate_ui(self, no_query=False):
@@ -922,6 +986,7 @@ class Program:
         self.song_filename_var.set(self.song_info.songFileName)
         self.new_var.set(self.song_info.new)
         self.papamama_var.set(self.song_info.papamama)
+        self.double_play_var.set(self.song_info.doublePlay)
 
         for i in range(5):
             self.spike_on_values[i].set(bool(self.song_info.spike_on[i]))
@@ -938,9 +1003,13 @@ class Program:
         self.ai_hard_values[1].set(self.song_info.aiUraLevel11 == "o")     
 
     def poplate_wordlist_vars(self):
-        self.song_name_var.set(self.song_info.songNameList[self.language_value.get()])
-        self.song_sub_var.set(self.song_info.songSubList[self.language_value.get()])
-        self.song_detail_var.set(self.song_info.songDetailList[self.language_value.get()])
+        self.song_name_var.set(self.song_info.songNameList[self.language_value.get()][0])
+        self.song_name_font_var.set(self.song_info.songNameList[self.language_value.get()][1])
+        self.song_sub_var.set(self.song_info.songSubList[self.language_value.get()][0])
+        self.song_sub_font_var.set(self.song_info.songSubList[self.language_value.get()][1])
+        self.song_detail_var.set(self.song_info.songDetailList[self.language_value.get()][0])
+        self.song_detail_font_var.set(self.song_info.songDetailList[self.language_value.get()][1])
+
 
 
 if __name__ == "__main__":

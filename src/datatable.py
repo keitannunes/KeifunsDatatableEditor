@@ -16,18 +16,19 @@ When adding a new attribute:
     2. Add attribute to Song class
     3. Update get_song_info()
     4. Update set_song_info()
-    5. Update save_datatable()
+    5. Update export_datatable() (if new file)
 """
 @dataclass
 class Song:
     id: str = ""
     uniqueId: int = 0
-    songNameList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
-    songSubList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
-    songDetailList: List[str] = field(default_factory=lambda: ['', '', '', '', ''])
+    songNameList: List[tuple[str, int]] = field(default_factory=lambda: [('', 0), ('', 1), ('', 2), ('', 3)])
+    songSubList: List[tuple[str, int]] = field(default_factory=lambda: [('', 0), ('', 1), ('', 2), ('', 3)])
+    songDetailList: List[tuple[str, int]] = field(default_factory=lambda: [('', 0), ('', 1), ('', 2), ('', 3)])
     genreNo: int = 0
     songFileName: str = ""
     new: bool = False
+    doublePlay: bool = False
     papamama: bool = False
     branch: List[bool] = field(default_factory=lambda: [False, False, False, False, False])
     star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
@@ -42,7 +43,7 @@ class Song:
     music_ai_section: List[int] = field(default_factory=lambda: [5, 5, 5, 5, 5])
     aiOniLevel11: str = ""
     aiUraLevel11: str = ""
-    musicOrder: List[int] = field(default_factory=lambda: [0, -1, -1, -1, -1, -1, -1, -1])
+    musicOrder: List[tuple[int,int]] = field(default_factory=lambda: [(0,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0)])
 
 
 @dataclass
@@ -120,7 +121,6 @@ class MusicAttributeItem:
     id: str = ""
     uniqueId: int = 0
     new: bool = False
-    canPlayUra: bool = False #not needed for 39.06 but flappy moment
     doublePlay: bool = False
     tag1: str = ""
     tag2: str = ""
@@ -305,22 +305,38 @@ class Datatable:
         music_attribute_item = self.music_attribute[indices.music_attribute]
         music_ai_section_item = self.music_ai_section[indices.music_ai_section]
         
-        music_order_indices = [-1, -1, -1, -1, -1, -1, -1, -1]
+        music_order_indices = [(-1,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0), (-1,0)]
         for genre_no, genre_list in enumerate(self.music_order):
             for i, e in enumerate(genre_list):
                 if e.id == id:
-                    music_order_indices[genre_no] = i
+                    music_order_indices[genre_no] = (i, e.closeDispType)
                     break 
         
         return Song(
             id= id,
             uniqueId= musicinfo_item.uniqueId,
-            songNameList= [wordlist_name_item.japaneseText, wordlist_name_item.englishUsText, wordlist_name_item.chineseTText, wordlist_name_item.koreanText],
-            songSubList= [wordlist_sub_item.japaneseText, wordlist_sub_item.englishUsText, wordlist_sub_item.chineseTText, wordlist_sub_item.koreanText],
-            songDetailList= [wordlist_detail_item.japaneseText, wordlist_detail_item.englishUsText, wordlist_detail_item.chineseTText, wordlist_detail_item.koreanText],
+            songNameList = [
+                (wordlist_name_item.japaneseText, wordlist_name_item.japaneseFontType),
+                (wordlist_name_item.englishUsText, wordlist_name_item.englishUsFontType),
+                (wordlist_name_item.chineseTText, wordlist_name_item.chineseTFontType),
+                (wordlist_name_item.koreanText, wordlist_name_item.koreanFontType)
+            ],
+            songSubList = [
+                (wordlist_sub_item.japaneseText, wordlist_sub_item.japaneseFontType),
+                (wordlist_sub_item.englishUsText, wordlist_sub_item.englishUsFontType),
+                (wordlist_sub_item.chineseTText, wordlist_sub_item.chineseTFontType),
+                (wordlist_sub_item.koreanText, wordlist_sub_item.koreanFontType)
+            ],
+            songDetailList = [
+                (wordlist_detail_item.japaneseText, wordlist_detail_item.japaneseFontType),
+                (wordlist_detail_item.englishUsText, wordlist_detail_item.englishUsFontType),
+                (wordlist_detail_item.chineseTText, wordlist_detail_item.chineseTFontType),
+                (wordlist_detail_item.koreanText, wordlist_detail_item.koreanFontType)
+            ],
             genreNo= musicinfo_item.genreNo,
             songFileName= musicinfo_item.songFileName,
             new= music_attribute_item.new,
+            doublePlay= music_attribute_item.doublePlay,
             papamama= musicinfo_item.papamama,
             branch = [
                 musicinfo_item.branchEasy, 
@@ -432,20 +448,30 @@ class Datatable:
             self.music_ai_section.append(MusicAISectionItem(id=song_info.id, uniqueId=song_info.uniqueId))
             self.music_usbsetting.append(MusicUsbsettingItem(id=song_info.id, uniqueId=song_info.uniqueId))
 
-        # List of language attributes
-        languages = ['japaneseText', 'englishUsText', 'chineseTText', 'koreanText']
+        languages = [
+            ('japaneseText', 'japaneseFontType'),
+            ('englishUsText', 'englishUsFontType'),
+            ('chineseTText', 'chineseTFontType'),
+            ('koreanText', 'koreanFontType')
+        ]
 
         # Updating songNameList
-        for i, language in enumerate(languages):
-            setattr(self.wordlist[indices.wordlist_name], language, song_info.songNameList[i])
+        for i, (text_attr, font_attr) in enumerate(languages):
+            text, font_type = song_info.songNameList[i]  # Extract both text and font type from the tuple
+            setattr(self.wordlist[indices.wordlist_name], text_attr, text)
+            setattr(self.wordlist[indices.wordlist_name], font_attr, font_type)
 
         # Updating songSubList
-        for i, language in enumerate(languages):
-            setattr(self.wordlist[indices.wordlist_sub], language, song_info.songSubList[i])
+        for i, (text_attr, font_attr) in enumerate(languages):
+            text, font_type = song_info.songSubList[i]  # Extract both text and font type from the tuple
+            setattr(self.wordlist[indices.wordlist_sub], text_attr, text)
+            setattr(self.wordlist[indices.wordlist_sub], font_attr, font_type)
 
         # Updating songDetailList
-        for i, language in enumerate(languages):
-            setattr(self.wordlist[indices.wordlist_detail], language, song_info.songDetailList[i])
+        for i, (text_attr, font_attr) in enumerate(languages):
+            text, font_type = song_info.songDetailList[i]  # Extract both text and font type from the tuple
+            setattr(self.wordlist[indices.wordlist_detail], text_attr, text)
+            setattr(self.wordlist[indices.wordlist_detail], font_attr, font_type)
 
         if song_info.uniqueId != self.musicinfo[indices.musicinfo].uniqueId:
             self.update_uid(self.musicinfo[indices.musicinfo].uniqueId, song_info.uniqueId)
@@ -455,6 +481,7 @@ class Datatable:
         self.musicinfo[indices.musicinfo].papamama = song_info.papamama
 
         self.music_attribute[indices.music_attribute].new = song_info.new
+        self.music_attribute[indices.music_attribute].doublePlay = song_info.doublePlay
 
         # For branch
         for i, attribute in enumerate(['branchEasy', 'branchNormal', 'branchHard', 'branchMania', 'branchUra']):
@@ -509,10 +536,10 @@ class Datatable:
         for genre_list in self.music_order:
             genre_list[:] = [item for item in genre_list if item.id != song_info.id]
 
-        for genre_no, new_position in enumerate(song_info.musicOrder):
+        for genre_no, (new_position, close_disp_type) in enumerate(song_info.musicOrder):
             if new_position > -1:
                 # Create a new MusicOrderItem for this genre if not already present
-                song_item = MusicOrderItem(genreNo=genre_no, id=song_info.id, uniqueId=song_info.uniqueId)
+                song_item = MusicOrderItem(genreNo=genre_no, id=song_info.id, uniqueId=song_info.uniqueId, closeDispType=close_disp_type)
                 
                 # Insert into the genre list at the specified position
                 genre_list = self.music_order[genre_no]
@@ -588,17 +615,22 @@ class Datatable:
         defaults = MusicAttributeItem().__dict__  # Use default values from the dataclass
 
         self.music_attribute = []
-        # Convert the list of dictionaries to a list of musicattributeItem objects
+        # Convert the list of dictionaries to a list of MusicAttributeItem objects
         for item in data_dict['items']:
             try:
+                # Remove the 'canPlayUra' field if it exists
+                if 'canPlayUra' in item:
+                    del item['canPlayUra']
+
                 # Use dictionary unpacking with defaults
                 full_item = {**defaults, **item}
 
-                # Create the musicattributeItem using the merged dictionary
+                # Create the MusicAttributeItem using the merged dictionary
                 music_attribute_item = MusicAttributeItem(**full_item)
                 self.music_attribute.append(music_attribute_item)
             except TypeError as e:
-                print(f"Failed to create MusicAttributeItem from {item['id']}: {e}")
+                print(f"Failed to create MusicAttributeItem from {item.get('id', 'Unknown')}: {e}")
+
 
     def parse_music_order(self) -> None:
         with open(os.path.join(self.filepath, 'music_order.json'), 'r', encoding='utf-8') as f:
@@ -713,14 +745,8 @@ class Datatable:
         with open(os.path.join(folder_path, 'wordlist.json'), 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
 
-        # Export music_attribute, delete canPlayUra
-        #09/05/24: Why the fuck am I deleting this on write back and not on load?? Future me issue
-        items_list = []
-        for item in self.music_attribute:
-            item_dict = asdict(item)  # Convert the dataclass instance to a dictionary
-            if 'canPlayUra' in item_dict:
-                del item_dict['canPlayUra']  # Remove the 'canPlayUra' field
-            items_list.append(item_dict)
+        # Export music_attribute
+        items_list = [asdict(item) for item in self.music_attribute]
         data_dict = {"items": items_list}
         with open(os.path.join(folder_path, 'music_attribute.json'), 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, separators=(',', ':'))
