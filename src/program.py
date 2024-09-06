@@ -202,7 +202,7 @@ class Program:
         self.language_value.set(0)
         self.language_value.trace_add("write", self.on_language_change)
 
-        for i, lang in enumerate(['ja', 'en', 'zh-TW', 'ko']):
+        for i, lang in enumerate(['JPN', 'ENG', 'zh-TW', 'KOR']):
             self.language_radiobuttons.append(tk.Radiobutton(self.language_frame, text=lang, variable=self.language_value, value=i))
             self.language_radiobuttons[i].grid(row=0, column=i)
 
@@ -567,6 +567,7 @@ class Program:
         self.songid_entry.insert(0, new_id)
         self.current_songid = new_id
         self.populate_ui(no_query=True)
+        self.song_info.uniqueId = -1
         if self.initial:
             self.initial = False
             # self.enable_all_widgets(self.window)
@@ -576,6 +577,8 @@ class Program:
             use_without_datatable = messagebox.askokcancel('New Song from TJA','No datatable is loaded. Do you want to create fumen/sound files anyway?')
             if not use_without_datatable:
                 return
+        else:
+            use_without_datatable = False
         if self.current_songid:
             try:
                 self.save_song()
@@ -648,9 +651,9 @@ class Program:
                 nonlocal export_complete
                 try:
                     fumen.convert_tja_to_fumen_files(new_id, tja_path, sound_filepath.get(), preview_offset_var.get(), chart_start_offset_var.get(), out_dir_path.get())
-                    messagebox.showinfo('Fumen Generate', 'Successfully generated files')
                     export_complete = True
                     config_window.destroy()
+                    messagebox.showinfo('Fumen Generate', 'Successfully generated files')
                 except Exception as e:
                     messagebox.showerror('Fumen Generate', f'Fumen Generatation Error: {e}')
                     traceback.print_exc()
@@ -715,12 +718,14 @@ class Program:
                                  songFileName=f'sound/song_{new_id}'
                                  )
         
-        self.song_info.songNameList[0] = (data.title, 0)
-        self.song_info.songSubList[0] = (data.sub, 0)
+        for i in range(4):
+            self.song_info.songNameList[i] = (data.title, i)
+            self.song_info.songSubList[i] = (data.sub, i)
         self.songid_entry.delete(0, tk.END)
         self.songid_entry.insert(0, new_id)
         self.current_songid = new_id
         self.populate_ui(no_query=True)
+        self.song_info.uniqueId = -1 #Do this so when saving song it always checks for existing unique id
         if self.initial:
             self.initial = False
             # self.enable_all_widgets(self.window)
