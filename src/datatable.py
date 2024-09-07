@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields, field
 from typing import List, Dict
 import json
 import os
-from src import encryption
+from src import encryption, config
 
 from dataclasses import dataclass, field, asdict
 from typing import List
@@ -30,6 +30,7 @@ class Song:
     new: bool = False
     doublePlay: bool = False
     papamama: bool = False
+    dancer: str = "000_default"
     branch: List[bool] = field(default_factory=lambda: [False, False, False, False, False])
     star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     shinuti: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
@@ -312,6 +313,13 @@ class Datatable:
                     music_order_indices[genre_no] = (i, e.closeDispType)
                     break 
         
+        dancer = "000_default"
+        for dancer_key, dancer_data in config.config.dancers.items():
+            if (music_attribute_item.ensoPartsID1 == dancer_data['ensoPartsID1'] and 
+                music_attribute_item.ensoPartsID2 == dancer_data['ensoPartsID2']):
+                dancer = dancer_key
+                break
+    
         return Song(
             id= id,
             uniqueId= musicinfo_item.uniqueId,
@@ -338,6 +346,7 @@ class Datatable:
             new= music_attribute_item.new,
             doublePlay= music_attribute_item.doublePlay,
             papamama= musicinfo_item.papamama,
+            dancer= dancer,
             branch = [
                 musicinfo_item.branchEasy, 
                 musicinfo_item.branchNormal, 
@@ -483,6 +492,20 @@ class Datatable:
         self.music_attribute[indices.music_attribute].new = song_info.new
         self.music_attribute[indices.music_attribute].doublePlay = song_info.doublePlay
 
+        dancer_key = song_info.dancer 
+        if dancer_key != "000_default":
+            # Get the dancer data from the config
+            if dancer_key in config.config.dancers:
+                dancer_data = config.config.dancers[dancer_key]
+            else:
+                print(f"Dancer {dancer_key} not found in config.")
+                return
+            for field, value in dancer_data.items():
+                if hasattr(self.music_attribute[indices.music_attribute], field):
+                    setattr(self.music_attribute[indices.music_attribute], field, value)
+                else:
+                    raise Exception(f'MusicAttribute class has no attribute {field}. Check config.json')
+
         # For branch
         for i, attribute in enumerate(['branchEasy', 'branchNormal', 'branchHard', 'branchMania', 'branchUra']):
             setattr(self.musicinfo[indices.musicinfo], attribute, song_info.branch[i])
@@ -621,6 +644,8 @@ class Datatable:
                 # Remove the 'canPlayUra' field if it exists
                 if 'canPlayUra' in item:
                     del item['canPlayUra']
+                if 'isNotCopyright' in item:
+                    del item['isNotCopyright']
 
                 # Use dictionary unpacking with defaults
                 full_item = {**defaults, **item}

@@ -516,6 +516,7 @@ def get_statistics(course):
 
 @dataclass
 class SongData:
+    demo_start: float = 0.0
     title: str = ""
     sub: str = ""
     star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
@@ -531,13 +532,13 @@ def parse_and_get_data(tja_file: str) -> SongData:
     """Takes in a tja fname and returns a parse_tja.SongData object"""
     ret = SongData()
     try:
-        file = open(tja_file, encoding='utf-8')
-    except Exception:
-        print('UTF-8 decode error, trying shift JIS')
-    try:
         file = open(tja_file, encoding='shiftjis')
     except Exception:
         print('ShiftJIS encoding error, trying shift_jisx0213')
+    try:
+        file = open(tja_file, encoding='utf-8')
+    except Exception:
+        print('UTF-8 decode error, trying shift JIS')
     try:
         file = open(tja_file, encoding='shift_jisx0213')
     except Exception:
@@ -546,11 +547,12 @@ def parse_and_get_data(tja_file: str) -> SongData:
         file = open(tja_file, encoding='shift_jis_2004')
     except Exception:
         print('ShiftJIS encoding error, trying latin-1')
-    file = open(tja_file, encoding='latin-1')
+    if not file: file = open(tja_file, encoding='latin-1')
 
     
 
     parsed = parse_tja(file.read())
+    ret.demo_start = float(parsed['headers']['demostart'])
     ret.title = parsed['headers']['title']
     sub = parsed['headers']['subtitle']
     ret.sub = sub[2::] if sub.startswith('--') else sub 
@@ -562,7 +564,7 @@ def parse_and_get_data(tja_file: str) -> SongData:
         ret.renda_time[i] = sum(stats['rendas'])
 
         #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
-        ret.shinuti[i] = floor(100_000.0 / ret.onpu_num[i]) * 10 
+        ret.shinuti[i] = floor(100_000.0 / ret.onpu_num[i]) if ret.renda_time[i] < 0.5 else ceil(100_000.0 / ret.onpu_num[i]) * 10 
         ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
     file.close()
     return ret

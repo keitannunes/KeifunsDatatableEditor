@@ -16,14 +16,14 @@ import webbrowser
 
 
 GENRE_MAPPING = {
-    "0. ポップス": 0,
-    "1. アニメ": 1,
-    "2. キッズ": 2,
-    "3. ボーカロイド™曲": 3,
-    "4. ゲームミュージック": 4,
-    "5. ナムコオリジナル": 5,
-    "6. バラエティ": 6,
-    "7. クラシック": 7,
+    "0. POP": 0,
+    "1. Anime": 1,
+    "2. Kids": 2,
+    "3. VOCALOID™ Music": 3,
+    "4. Game Music": 4,
+    "5. NAMCO Original": 5,
+    "6. Variety": 6,
+    "7. Classic": 7,
 }
 
 class Program:
@@ -75,6 +75,7 @@ class Program:
     papamama_var: tk.BooleanVar
     unique_id_var: tk.IntVar
     genre_var: tk.StringVar
+    dancer_var: tk.StringVar
 
     #Combobox
     genre_combobox: ttk.Combobox
@@ -145,6 +146,7 @@ class Program:
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("Keifun's Datatable Editor")
+        self.window.resizable(False, False)
         #self.window.geometry("1280x720")  # Set window size to 720p
 
         img = Image.open(common.resource_path("src/assets/icon.png"))  # Replace with the path to your .png file
@@ -213,7 +215,7 @@ class Program:
 
         self.song_details_subframes = list()
 
-        for i in range(3):
+        for i in range(4):
             self.song_details_subframes.append(tk.Frame(self.song_details_frame, padx=8))
             self.song_details_subframes[i].grid(row=0, column=i, sticky="nsew")
 
@@ -221,6 +223,7 @@ class Program:
         self.song_details_frame.grid_columnconfigure(0, weight=1)
         self.song_details_frame.grid_columnconfigure(1, weight=1)
         self.song_details_frame.grid_columnconfigure(2, weight=1)
+        self.song_details_frame.grid_columnconfigure(3, weight=1)
 
         # Create variables for each widget
         self.song_name_var = tk.StringVar()
@@ -235,6 +238,7 @@ class Program:
         self.unique_id_var = tk.IntVar()
         self.double_play_var = tk.BooleanVar()
         self.genre_var = tk.StringVar()
+        self.dancer_var = tk.StringVar()
 
         ## COL 1 - Anchored Left and Expanded
         self.font_label = tk.Label(self.song_details_subframes[0], text="Font")
@@ -289,22 +293,38 @@ class Program:
         self.song_filename_entry.grid(row=5, column=0, sticky="ew")
 
         ## COL 3 - Anchored Left
-        self.new_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="New", variable=self.new_var)
-        self.new_checkbutton.grid(row=0, column=0, sticky="w")
+        
+        #Dancer
+        self.dancer_label = tk.Label(self.song_details_subframes[2], text="Dancer:", anchor="w", width=20)
+        self.dancer_label.grid(row=0, column=0, sticky="w")
 
-        self.papamama_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="Papamama", variable=self.papamama_var)
-        self.papamama_checkbutton.grid(row=1, column=0, sticky="w")
+        self.dancer_combobox = ttk.Combobox(self.song_details_subframes[2], values=["000_default"] + list(config.config.dancers.keys()), textvariable=self.dancer_var)
+        self.dancer_combobox.grid(row=1, column=0, sticky="ew")
 
-        self.double_play_checkbutton = tk.Checkbutton(self.song_details_subframes[2], text="Double Play", variable=self.double_play_var)
-        self.double_play_checkbutton.grid(row=2, column=0, sticky="ew")
-    
+        #Placeholder label
+
+        self.song_filename_label = tk.Label(self.song_details_subframes[2], text="", anchor="w", width=20)
+        self.song_filename_label.grid(row=2, column=0, sticky="w")
+
         self.music_order_button = tk.Button(self.song_details_subframes[2], text="Set Music Order", command=self.open_musicorder_window)
         self.music_order_button.grid(row=3, column=0, sticky="ew")
+        
+        ## COL 4
+
+        self.new_checkbutton = tk.Checkbutton(self.song_details_subframes[3], text="New", variable=self.new_var)
+        self.new_checkbutton.grid(row=0, column=0, sticky="w")
+
+        self.papamama_checkbutton = tk.Checkbutton(self.song_details_subframes[3], text="Papamama", variable=self.papamama_var)
+        self.papamama_checkbutton.grid(row=1, column=0, sticky="w")
+
+        self.double_play_checkbutton = tk.Checkbutton(self.song_details_subframes[3], text="Double Play", variable=self.double_play_var)
+        self.double_play_checkbutton.grid(row=2, column=0, sticky="ew")
 
         # Make sure the subframes resize properly
         self.song_details_subframes[0].grid_columnconfigure(0, weight=1)
         self.song_details_subframes[1].grid_columnconfigure(0, weight=1)
         self.song_details_subframes[2].grid_columnconfigure(0, weight=1)
+        self.song_details_subframes[3].grid_columnconfigure(0, weight=1)
 
                 
         ### Difficulty Info ###
@@ -439,6 +459,7 @@ class Program:
 
     def open_musicorder_window(self):
         self.music_order_window = tk.Toplevel(self.window)
+        self.music_order_window.attributes('-toolwindow', True)
         self.music_order_window.grab_set()
         self.music_order_window.title(f'Music Order - {self.current_songid}')
 
@@ -511,7 +532,7 @@ class Program:
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
-            elif child in [self.genre_combobox, self.song_name_font_spinbox, self.song_sub_font_spinbox, self.song_detail_font_spinbox]:
+            elif child in [self.genre_combobox, self.dancer_combobox, self.song_name_font_spinbox, self.song_sub_font_spinbox, self.song_detail_font_spinbox]:
                 child.config(state="readonly")
             elif isinstance(child, (tk.Entry, tk.Radiobutton, tk.Checkbutton, tk.Spinbox, tk.Button)):
                 child.config(state="normal")
@@ -531,6 +552,8 @@ class Program:
                 return
 
         self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
+        self.new_song_window.attributes('-toolwindow', True)
+
         self.new_song_window.grab_set()
         self.new_song_window.title(f'New Song')
 
@@ -549,6 +572,9 @@ class Program:
             if not new_id_candidate:
                 messagebox.showerror('New Song', 'Enter a Song Id')
                 return  
+            if 3 > len(new_id_candidate) or len(new_id_candidate) > 8:
+                messagebox.showerror('New Song', 'Song Id must be between 3 and 8 characters long')
+                return 
             if self.datatable.is_song_id_taken(new_id_candidate):
                 messagebox.showerror('New Song', 'Song Id already taken')
                 return
@@ -587,6 +613,8 @@ class Program:
                 return
         
         self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
+        self.new_song_window.attributes('-toolwindow', True)
+
         self.new_song_window.grab_set()
         self.new_song_window.title(f'New Song')
 
@@ -605,6 +633,9 @@ class Program:
             if not new_id_candidate:
                 messagebox.showerror('New Song', 'Enter a Song Id')
                 return  
+            if 3 > len(new_id_candidate) or len(new_id_candidate) > 8:
+                messagebox.showerror('New Song', 'Song Id must be between 3 and 8 characters long')
+                return 
             if not use_without_datatable and self.datatable.is_song_id_taken(new_id_candidate):
                 messagebox.showerror('New Song', 'Song Id already taken')
                 return
@@ -641,7 +672,7 @@ class Program:
             
             def set_sound():
                 sound_filepath.set(filedialog.askopenfilename(title="Select a Sound file", filetypes=[("Audio Files", ".wav .ogg")]))
-            
+
             def set_out_dir():
                 path = filedialog.askdirectory(title='Export Directory')
                 config.config.update_game_files_out_dir(path)
@@ -650,23 +681,46 @@ class Program:
             def submit_config():
                 nonlocal export_complete
                 try:
-                    fumen.convert_tja_to_fumen_files(new_id, tja_path, sound_filepath.get(), preview_offset_var.get(), chart_start_offset_var.get(), out_dir_path.get())
+                    # Retrieve the current values of the offsets
+                    preview_offset = preview_offset_var.get()
+                    chart_start_offset = chart_start_offset_var.get()
+                    
+                    # Convert to milliseconds if the user has selected seconds ('s')
+                    if time_unit_var.get() == "s":
+                        preview_offset *= 1000  # Convert seconds to milliseconds
+                        chart_start_offset *= 1000  # Convert seconds to milliseconds
+
+                    # If the time unit is 'ms', leave the values as they are (already in ms)
+                    
+                    # Pass the offsets (in ms) to the fumen conversion function
+                    fumen.convert_tja_to_fumen_files(
+                        new_id, 
+                        tja_path, 
+                        sound_filepath.get(), 
+                        int(preview_offset), 
+                        int(chart_start_offset), 
+                        out_dir_path.get()
+                    )
+
                     export_complete = True
                     config_window.destroy()
                     messagebox.showinfo('Fumen Generate', 'Successfully generated files')
                 except Exception as e:
-                    messagebox.showerror('Fumen Generate', f'Fumen Generatation Error: {e}')
+                    messagebox.showerror('Fumen Generate', f'Fumen Generation Error: {e}')
                     traceback.print_exc()
+
 
             # Create a new Toplevel window
             config_window = tk.Toplevel()
             config_window.grab_set()
+            config_window.attributes('-toolwindow', True)
             config_window.title("Generate Fumen Files")
 
             sound_filepath = tk.StringVar()
-            out_dir_path = tk.StringVar(value=config.config.gameFilesOutDir) 
-            preview_offset_var = tk.DoubleVar(value=0.0)
+            out_dir_path = tk.StringVar(value=config.config.gameFilesOutDir)
+            preview_offset_var = tk.DoubleVar(value=data.demo_start)
             chart_start_offset_var = tk.DoubleVar(value=0.0)
+            time_unit_var = tk.StringVar(value="s")  # Default to seconds
 
             tk.Label(config_window, text="TJA File:").grid(row=0, column=0, padx=10, pady=2)
             tja_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=tk.StringVar(value=tja_path))
@@ -675,34 +729,48 @@ class Program:
             tk.Label(config_window, text="Sound File:").grid(row=2, column=0, padx=10, pady=2)
             sound_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=sound_filepath)
             sound_entry.grid(row=3, column=0, padx=10, pady=2)
-            sound_button = tk.Button(config_window, text="Set", command=set_sound)
+            sound_button = tk.Button(config_window, text="Set", command=set_sound, padx=5)
             sound_button.grid(row=3, column=1)
 
             tk.Label(config_window, text="Export Directory:").grid(row=4, column=0, padx=10, pady=2)
             out_entry = tk.Entry(config_window, width=70, state="readonly", textvariable=out_dir_path)
             out_entry.grid(row=5, column=0, padx=10, pady=2)
-            out_button = tk.Button(config_window, text="Set", command=set_out_dir)
+            out_button = tk.Button(config_window, text="Set", command=set_out_dir, padx=5)
             out_button.grid(row=5, column=1, padx=5)
 
-            # Label and Spinbox for Preview Offset
-            tk.Label(config_window, text="Preview Offset:").grid(row=6, column=0, padx=10, pady=10)
+            # Create a Frame for Time-related settings (Preview Offset, Chart Start Offset, Time Unit)
+            time_frame = tk.Frame(config_window)
+            time_frame.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky="w")
+
+            # Label and Spinbox for Preview Offset inside the time_frame
+            tk.Label(time_frame, text="Preview Offset:").grid(row=0, column=0, padx=10, pady=2)
             preview_offset_spinbox = tk.Spinbox(
-                config_window, from_=-10.0, to=10.0, increment=0.1, format="%.1f", width=8,
+                time_frame, from_=0.0, to=10.0, increment=0.1, format="%.1f", width=8,
                 textvariable=preview_offset_var
             )
-            preview_offset_spinbox.grid(row=6, column=1, padx=10, pady=10)
+            preview_offset_spinbox.grid(row=0, column=1, padx=10, pady=2)
 
-            # Label and Spinbox for Chart Start Offset
-            tk.Label(config_window, text="Chart Start Offset:").grid(row=7, column=0, padx=10, pady=10)
+            # Label and Spinbox for Chart Start Offset inside the time_frame
+            tk.Label(time_frame, text="Add blank audio before song start:").grid(row=1, column=0, padx=10, pady=2)
             chart_start_offset_spinbox = tk.Spinbox(
-                config_window, from_=-10.0, to=10.0, increment=0.1, format="%.1f", width=8,
+                time_frame, from_=-10.0, to=10.0, increment=0.1, format="%.1f", width=8,
                 textvariable=chart_start_offset_var
             )
-            chart_start_offset_spinbox.grid(row=7, column=1, padx=10, pady=10)
+            chart_start_offset_spinbox.grid(row=1, column=1, padx=10, pady=2)
+
+            # Radio buttons for selecting time unit (ms or s) inside the time_frame
+            tk.Label(time_frame, text="Time Unit:").grid(row=2, column=0, padx=10, pady=2)
+            time_unit_frame = tk.Frame(time_frame)
+            time_unit_frame.grid(row=2, column=1, padx=10, pady=2)
+
+            ms_radio = tk.Radiobutton(time_unit_frame, text="ms", variable=time_unit_var, value="ms")
+            ms_radio.pack(side="left")
+            s_radio = tk.Radiobutton(time_unit_frame, text="s", variable=time_unit_var, value="s")
+            s_radio.pack(side="left")
 
             # Create Submit Button
             generate_button = tk.Button(config_window, text="Generate", command=submit_config)
-            generate_button.grid(row=8, column=0, pady=5)
+            generate_button.grid(row=7, column=0, pady=5)
 
             config_window.wait_window()
             
@@ -755,6 +823,8 @@ class Program:
             new_uid_window.destroy()
 
         new_uid_window = tk.Toplevel(pady=10, padx=10)
+        new_uid_window.attributes('-toolwindow', True)
+
         new_uid_window.grab_set()
         new_uid_window.title('Update uniqueId {uniqueId}')
         prompt = tk.Label(new_uid_window, text = 'Enter a new UniqueId for the song to overwrite the existing one')
@@ -831,6 +901,8 @@ class Program:
         config_window = tk.Toplevel()
         config_window.grab_set()
         config_window.title("Enter Configuration")
+        config_window.attributes('-toolwindow', True)
+
 
         # Create Label and Entry for Datatable Key
         tk.Label(config_window, text="Datatable Key:").grid(row=0, column=0, padx=10, pady=10)
@@ -879,6 +951,7 @@ class Program:
         self.song_info.new = self.new_var.get()
         self.song_info.papamama = self.papamama_var.get()
         self.song_info.doublePlay = self.double_play_var.get()
+        self.song_info.dancer = self.dancer_var.get()
 
         for i in range(5):
             self.song_info.branch[i] = self.branch_values[i].get()
@@ -927,6 +1000,7 @@ class Program:
                 #self.enable_all_widgets(self.window)
         except Exception as e:
             messagebox.showerror('Song Load Error', f'Song Load Error: {e}')
+            traceback.print_exc()
             self.current_songid = old_songid
             self.songid_entry.delete(0, tk.END)
             self.songid_entry.insert(0, old_songid)
@@ -992,6 +1066,7 @@ class Program:
         self.new_var.set(self.song_info.new)
         self.papamama_var.set(self.song_info.papamama)
         self.double_play_var.set(self.song_info.doublePlay)
+        self.dancer_var.set(self.song_info.dancer)
 
         for i in range(5):
             self.spike_on_values[i].set(bool(self.song_info.spike_on[i]))

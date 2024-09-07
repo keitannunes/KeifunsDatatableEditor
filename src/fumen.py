@@ -31,7 +31,7 @@ def convert_and_write(tja_data: TJACourse,
     write_fumen(os.path.join(temp_dir, f"{output_name}_2.bin"), fumen_data)
 
 
-def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_point: float, start_point: float, out_path: str) -> None:
+def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_point: int, start_offset: int, out_path: str) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         fumen_out = os.path.join(out_path, 'fumen', id)
         sound_out = os.path.join(out_path, 'sound')
@@ -42,10 +42,11 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_
             os.makedirs(sound_out)
 
         parsed_tja = parse_tja(tja_file)
-
+        parsed_tja.offset -= start_offset / 1000.0
         # Convert parsed TJA courses and write each course to `.bin` files inside temp_dir
-        for course_name, course in parsed_tja.courses.items():
-            convert_and_write(course, course_name, id,
+        for course_name in parsed_tja.courses.keys():
+            if start_offset > 0: parsed_tja.courses[course_name].offset -= start_offset / 1000.0
+            convert_and_write(parsed_tja.courses[course_name], course_name, id,
                               single_course=len(parsed_tja.courses) == 1,
                               temp_dir=temp_dir)  # Use temp_dir for output
 
@@ -66,5 +67,5 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_
                     os.remove(in_path)
 
         ### Sound Stuff
-        nus3bank.ogg_or_wav_to_idsp_to_nus3bank(sound_file, os.path.join(sound_out, f'song_{id}.nus3bank'), preview_point, id, temp_dir) 
+        nus3bank.ogg_or_wav_to_idsp_to_nus3bank(sound_file, os.path.join(sound_out, f'song_{id}.nus3bank'), preview_point, start_offset, id, temp_dir) 
 

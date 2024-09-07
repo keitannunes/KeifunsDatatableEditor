@@ -440,18 +440,23 @@ def convert_audio_to_nus3bank(input_audio, audio_type, game, preview_point, song
     else:
         print(f"Unsupported audio type: {audio_type}")
 
-def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: float, song_id: str, temp_dir):
+def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: int, start_offset: int, song_id: str, temp_dir):
     """Custom function for KDE"""
     ogg = input_audio.endswith('.ogg')
     if ogg:
         audio = AudioSegment.from_ogg(input_audio)
         input_audio = os.path.join(temp_dir, f'{song_id}.wav')
         audio.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
+    if start_offset > 0:
+        audio = AudioSegment.from_wav(input_audio)
+        silent_segment = AudioSegment.silent(duration=start_offset)
+        combined = silent_segment + audio
+        combined.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
 
     idsp_audio = f'{song_id}.idsp'
     convert_audio_to_idsp(input_audio, idsp_audio)
     template_name = select_template_name('nijiiro', f'song_{song_id}.nus3bank')
-    modify_nus3bank_template('nijiiro', template_name, idsp_audio, preview_point, out_file)
+    modify_nus3bank_template('nijiiro', template_name, idsp_audio, preview_point + max(start_offset, 0), out_file)
     if os.path.exists(idsp_audio):
         os.remove(idsp_audio)
     if ogg and os.path.exists(input_audio):
