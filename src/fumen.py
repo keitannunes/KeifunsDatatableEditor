@@ -42,7 +42,7 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_
             os.makedirs(sound_out)
 
         parsed_tja = parse_tja(tja_file)
-        parsed_tja.offset -= start_offset / 1000.0
+        if start_offset > 0: parsed_tja.offset -= start_offset / 1000.0
         # Convert parsed TJA courses and write each course to `.bin` files inside temp_dir
         for course_name in parsed_tja.courses.keys():
             if start_offset > 0: parsed_tja.courses[course_name].offset -= start_offset / 1000.0

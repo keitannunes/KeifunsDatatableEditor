@@ -658,6 +658,7 @@ class Program:
             data = parse_tja.parse_and_get_data(tja_path)
         except Exception as e:
             messagebox.showerror('TJA Import', f'TJA Import Error: {e}')
+            traceback.print_exc()
             return
         
         if use_without_datatable: 
@@ -745,7 +746,7 @@ class Program:
             # Label and Spinbox for Preview Offset inside the time_frame
             tk.Label(time_frame, text="Preview Offset:").grid(row=0, column=0, padx=10, pady=2)
             preview_offset_spinbox = tk.Spinbox(
-                time_frame, from_=0.0, to=10.0, increment=0.1, format="%.1f", width=8,
+                time_frame, from_=0.0, to=99999, increment=0.1, format="%.1f", width=8,
                 textvariable=preview_offset_var
             )
             preview_offset_spinbox.grid(row=0, column=1, padx=10, pady=2)

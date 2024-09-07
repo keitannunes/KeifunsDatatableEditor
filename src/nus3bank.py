@@ -452,6 +452,7 @@ def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_poin
         silent_segment = AudioSegment.silent(duration=start_offset)
         combined = silent_segment + audio
         combined.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
+        
 
     idsp_audio = f'{song_id}.idsp'
     convert_audio_to_idsp(input_audio, idsp_audio)

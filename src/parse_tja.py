@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Dict
 from math import ceil, floor
+import typing
 HEADER_GLOBAL = [
     'TITLE',
     'SUBTITLE',
@@ -531,27 +532,26 @@ class SongData:
 def parse_and_get_data(tja_file: str) -> SongData:
     """Takes in a tja fname and returns a parse_tja.SongData object"""
     ret = SongData()
-    try:
-        file = open(tja_file, encoding='shiftjis')
-    except Exception:
-        print('ShiftJIS encoding error, trying shift_jisx0213')
-    try:
-        file = open(tja_file, encoding='utf-8')
-    except Exception:
-        print('UTF-8 decode error, trying shift JIS')
-    try:
-        file = open(tja_file, encoding='shift_jisx0213')
-    except Exception:
-        print('ShiftJIS encoding error, trying shift_jis_2004')
-    try:
-        file = open(tja_file, encoding='shift_jis_2004')
-    except Exception:
-        print('ShiftJIS encoding error, trying latin-1')
-    if not file: file = open(tja_file, encoding='latin-1')
+    file_str = None  # Initialize file_str to avoid the UnboundLocalError
 
-    
+    # Try opening the file with different encodings
+    encodings = ['shiftjis', 'shift_jisx0213', 'utf-8-sig', 'utf-8', 'shift_jis_2004', 'latin-1']
+    for encoding in encodings:
+        try:
+            with open(tja_file, encoding=encoding) as file:
+                file_str = file.read()
+            print(f'Successfully read file with {encoding} encoding')
+            break  # If successful, break out of the loop
+        except Exception as e:
+            print(f'Error reading file with {encoding} encoding: {e}')
+            continue
 
-    parsed = parse_tja(file.read())
+    if file_str:
+        # Proceed with the parsing if file_str has been assigned
+        parsed = parse_tja(file_str)
+    else:
+        raise Exception("Failed to parse TJA File")
+
     ret.demo_start = float(parsed['headers']['demostart'])
     ret.title = parsed['headers']['title']
     sub = parsed['headers']['subtitle']
@@ -564,7 +564,7 @@ def parse_and_get_data(tja_file: str) -> SongData:
         ret.renda_time[i] = sum(stats['rendas'])
 
         #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
-        ret.shinuti[i] = floor(100_000.0 / ret.onpu_num[i]) if ret.renda_time[i] < 0.5 else ceil(100_000.0 / ret.onpu_num[i]) * 10 
+        ret.shinuti[i] = (floor(100_000.0 / ret.onpu_num[i]) if ret.renda_time[i] > 0.5 else ceil(100_000.0 / ret.onpu_num[i])) * 10 
         ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
     file.close()
     return ret
