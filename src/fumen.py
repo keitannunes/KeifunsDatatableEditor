@@ -2,7 +2,7 @@ from tja2fumen.parsers import parse_tja
 from tja2fumen.converters import convert_tja_to_fumen, fix_dk_note_types_course
 from tja2fumen.writers import write_fumen
 from tja2fumen.constants import COURSE_IDS
-from tja2fumen.classes import TJACourse
+from tja2fumen.classes import TJACourse, TJAMeasure, TJAData
 from pydub import AudioSegment
 import os, re
 from src import encryption, nus3bank
@@ -30,7 +30,6 @@ def convert_and_write(tja_data: TJACourse,
     write_fumen(os.path.join(temp_dir, f"{output_name}_1.bin"), fumen_data)
     write_fumen(os.path.join(temp_dir, f"{output_name}_2.bin"), fumen_data)
 
-
 def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_point: int, start_offset: int, out_path: str) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         fumen_out = os.path.join(out_path, 'fumen', id)
@@ -42,10 +41,34 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_
             os.makedirs(sound_out)
 
         parsed_tja = parse_tja(tja_file)
-        if start_offset > 0: parsed_tja.offset -= start_offset / 1000.0
+
+        ## Normalize audio and add measure to all courses/branches
+        one_measure_ms = (60000 / parsed_tja.bpm) * 4
+        offset_ms = parsed_tja.offset * 1000
+        preview_point += int(one_measure_ms - offset_ms + start_offset)
+        normalized_audio = nus3bank.normalize_and_add_offset(sound_file, int(offset_ms), int(one_measure_ms), start_offset, temp_dir)
+        #add empty measure
+        for course in parsed_tja.courses.keys():
+            for branch in parsed_tja.courses[course].branches.keys():
+                if parsed_tja.courses[course].branches[branch] != []:
+                    parsed_tja.courses[course].branches[branch].insert(0, TJAMeasure([],[],[TJAData(name='barline', value='0', pos=0)]))
+                    first_real_measure = parsed_tja.courses[course].branches[branch][1]
+                    has_barline = False
+                    for e in first_real_measure.combined:
+                        if e.name == 'barline':
+                            has_barline = True
+                            break
+                    if not has_barline:
+                        first_real_measure.combined.append(TJAData(name='barline', value='1', pos=0))
+                    print(parsed_tja.courses[course].branches[branch][0])
+                    print(parsed_tja.courses[course].branches[branch][1])
+
+
+        parsed_tja.offset = min(start_offset / -1000.0, 0.0)
+
         # Convert parsed TJA courses and write each course to `.bin` files inside temp_dir
         for course_name in parsed_tja.courses.keys():
-            if start_offset > 0: parsed_tja.courses[course_name].offset -= start_offset / 1000.0
+            if start_offset > 0: parsed_tja.courses[course_name].offset = min(start_offset / -1000.0, 0.0)
             convert_and_write(parsed_tja.courses[course_name], course_name, id,
                               single_course=len(parsed_tja.courses) == 1,
                               temp_dir=temp_dir)  # Use temp_dir for output
@@ -66,6 +89,8 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, sound_file: str, preview_
                     )
                     os.remove(in_path)
 
-        ### Sound Stuff
-        nus3bank.ogg_or_wav_to_idsp_to_nus3bank(sound_file, os.path.join(sound_out, f'song_{id}.nus3bank'), preview_point, start_offset, id, temp_dir) 
+        # ### Sound Stuff
+        nus3bank.wav_to_idsp_to_nus3bank(normalized_audio, os.path.join(sound_out, f'song_{id}.nus3bank'), preview_point, id) 
+        if os.path.exists(normalized_audio):
+            os.remove(normalized_audio)
 

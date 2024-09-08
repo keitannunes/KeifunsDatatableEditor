@@ -440,26 +440,37 @@ def convert_audio_to_nus3bank(input_audio, audio_type, game, preview_point, song
     else:
         print(f"Unsupported audio type: {audio_type}")
 
-def ogg_or_wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: int, start_offset: int, song_id: str, temp_dir):
+def normalize_and_add_offset(input_audio: str, original_offset_ms: int, one_measure_ms: int, song_start_offset: int, temp_dir) -> str:
+    audio = AudioSegment.from_file(input_audio)
+    adjusted_audio = AudioSegment.silent(duration=one_measure_ms) + audio
+
+    if original_offset_ms > 0:
+        adjusted_audio = AudioSegment.silent(duration=original_offset_ms) + adjusted_audio
+    else:
+        adjusted_audio = adjusted_audio[-original_offset_ms:] if len(adjusted_audio) > -original_offset_ms else adjusted_audio
+    if song_start_offset > 0:
+        adjusted_audio = AudioSegment.silent(duration=song_start_offset) + adjusted_audio
+    export_file = os.path.join(temp_dir, 'normalized.wav')
+    adjusted_audio.export(export_file, format="wav", parameters=["-acodec", "pcm_s16le"])
+    return export_file
+    
+
+
+    
+    
+def wav_to_idsp_to_nus3bank(input_audio: str, out_file: str, preview_point: int, song_id: str):
     """Custom function for KDE"""
-    ogg = input_audio.endswith('.ogg')
-    if ogg:
-        audio = AudioSegment.from_ogg(input_audio)
-        input_audio = os.path.join(temp_dir, f'{song_id}.wav')
-        audio.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
-    if start_offset > 0:
-        audio = AudioSegment.from_wav(input_audio)
-        silent_segment = AudioSegment.silent(duration=start_offset)
-        combined = silent_segment + audio
-        combined.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
+    # if start_offset > 0:
+    #     audio = AudioSegment.from_wav(input_audio)
+    #     silent_segment = AudioSegment.silent(duration=start_offset)
+    #     combined = silent_segment + audio
+    #     combined.export(input_audio, format="wav", parameters=["-acodec", "pcm_s16le"])
         
 
     idsp_audio = f'{song_id}.idsp'
     convert_audio_to_idsp(input_audio, idsp_audio)
     template_name = select_template_name('nijiiro', f'song_{song_id}.nus3bank')
-    modify_nus3bank_template('nijiiro', template_name, idsp_audio, preview_point + max(start_offset, 0), out_file)
+    modify_nus3bank_template('nijiiro', template_name, idsp_audio, preview_point, out_file)
     if os.path.exists(idsp_audio):
         os.remove(idsp_audio)
-    if ogg and os.path.exists(input_audio):
-        os.remove(input_audio)
     
