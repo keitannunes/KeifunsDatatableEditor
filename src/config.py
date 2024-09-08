@@ -301,7 +301,7 @@ class Config:
                     "rendaEffect1": "lumen/019_mario/enso_normal/enso/renda_effect/renda_b_019.nulstb",
                     "fever1": "lumen/019_mario/enso_normal/enso/fever/fever_b_019.nulstb"      
                 },
-                "A3": {
+                "020_A3": {
                     "ensoPartsID1": 20,
                     "ensoPartsID2": 20,
                     "donBg1p": "lumen/020_A3/enso_normal/enso/donbg/donbg_b_020_1p.nulstb",
