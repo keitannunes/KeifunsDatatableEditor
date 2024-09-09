@@ -10,6 +10,7 @@ from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 from typing import List
 from src import config, parse_tja, fumen, common
+from src import updater as ud
 import traceback
 import webbrowser
 
@@ -456,6 +457,9 @@ class Program:
         self.initial = True
         self.disable_all_widgets(self.window)
         self.song_info = dt.Song()
+
+        updater = ud.Updater(self.window)
+        updater.check_for_updates()
 
     def open_musicorder_window(self):
         self.music_order_window = tk.Toplevel(self.window)

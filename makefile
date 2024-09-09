@@ -6,12 +6,13 @@ ASSETS = ./src/assets/*.png
 TEMPLATES = ./templates
 BIN = ./bin/*
 HOOKS_DIR = ./hooks
+VERSION_FILE = ./version_info.txt
 
 # PyInstaller command
 PYINSTALLER = pyinstaller
 
 # PyInstaller options
-PYINSTALLER_OPTS = --onefile --windowed --icon=$(ICON) --name $(NAME)
+PYINSTALLER_OPTS = --onefile --windowed --icon=$(ICON) --name $(NAME) --version-file=$(VERSION_FILE)
 
 # Build command
 .PHONY: build
