@@ -698,8 +698,8 @@ class Program:
                         new_id, 
                         tja_path, 
                         sound_filepath.get(), 
-                        int(preview_offset), 
-                        int(chart_start_offset), 
+                        preview_offset, 
+                        chart_start_offset, 
                         out_dir_path.get()
                     )
 

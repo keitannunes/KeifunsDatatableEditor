@@ -565,7 +565,7 @@ def parse_and_get_data(tja_file: str) -> SongData:
 
         #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
         ret.shinuti[i] = (floor(100_000.0 / ret.onpu_num[i]) if ret.renda_time[i] > 0.5 else ceil(100_000.0 / ret.onpu_num[i])) * 10 
-        ret.shinuti_score[i] = round(ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100)
+        ret.shinuti_score[i] = round((ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100) / 10) * 10
     file.close()
     return ret
         
