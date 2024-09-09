@@ -12,7 +12,7 @@ KDEを使用する事でdatatableを簡単に変更・管理することが出�
 - **fumenとsoundファイルの生成**: TJAファイルから直接fumenとsoundファイルを生成します。
 
 ## 追加予定の機能
-- datatableからの曲の削除#???
+- datatableからの曲の削除
 - MusicAttributeのtag編集
 - 曲名/サブタイトルで曲検索
 - 称号/リワード編集機能
