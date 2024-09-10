@@ -12,6 +12,7 @@ from typing import List
 from src import config, parse_tja, fumen, common
 from src import updater as ud
 import traceback
+import shutil
 import webbrowser
 
 
@@ -674,6 +675,27 @@ class Program:
             if not config.config.fumenKey:
                 messagebox.showerror('Fumen Generate', 'Fumen Generation Error: Empty Fumen Key')
                 return
+            
+            #check if ffmpeg components are in path
+            ffmpeg_present = shutil.which('ffmpeg') is not None
+            ffprobe_present = shutil.which('ffprobe') is not None
+
+            if not ffmpeg_present or not ffprobe_present:
+                missing_components = []
+                if not ffmpeg_present:
+                    missing_components.append("ffmpeg")
+                if not ffprobe_present:
+                    missing_components.append("ffprobe")
+                
+                missing_str = " and ".join(missing_components)
+                
+                error_title = "Missing Components"
+                error_message = f"{missing_str} {'is' if len(missing_components) == 1 else 'are'} not found in the system PATH.\n"
+                error_message += "Please install the missing component(s) and add them to your system PATH."
+            
+                messagebox.showerror(error_title, error_message)
+                return
+            
             
             def set_sound():
                 sound_filepath.set(filedialog.askopenfilename(title="Select a Sound file", filetypes=[("Audio Files", ".wav .ogg")]))
