@@ -5,7 +5,7 @@
 KeifunsDatatableEditor (KDE) is a replacement for TaikoSoundEditor (TSE), specifically designed for Nijiiro JPN39. KDE allows you to easily modify and manage the datatable for your Taiko games, with several additional features to streamline the process.
 
 ## Features
-- **Edit Datatable**: Modify the the datatable with ease.
+- **Edit Datatable**: Modify the datatable with ease.
 - **Add/Remove Songs**: Add or remove songs from the datatable.
 - **Auto-Generate Song Details**: Automatically generate song details from TJA files.
 - **Create Fumen and Sound Files**: Generate fumen and sound files directly from TJA.
@@ -13,9 +13,9 @@ KeifunsDatatableEditor (KDE) is a replacement for TaikoSoundEditor (TSE), specif
 ## Planned Features
 - Removing songs from the datatable
 - MusicAttribute tag editing
-- Song search by Name/Subtitle
+- Song search by name/subtitle
 - Shougou/reward editing
-- Japanese Translation
+- Japanese translation
 
 ## Requirements
 - **FFmpeg**: This project requires [FFmpeg](https://ffmpeg.org/) for handling audio file conversions. Make sure it is installed and accessible in your system's PATH.
