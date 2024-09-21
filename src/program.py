@@ -142,7 +142,7 @@ class Program:
     previous_language: int
     datatable: dt.Datatable
     song_info: dt.Song
-    initial: bool
+    initial: bool #I'm genuinely convinced this variable is never used, scared and lazy to check
     duet_change_ignore_flag: bool #I absolutely fucking hate this variable; Theres definitely a better solution that my retarded ass cannot think of
 
     def __init__(self):
@@ -190,12 +190,19 @@ class Program:
 
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
-        self.songid_entry = tk.Entry(self.window)
-
         self.songid_label.grid(row=0, column=0)
-        self.songid_entry.grid(row=1, column=0)
+
+        self.songid_frame = tk.Frame(self.window)
+        self.songid_frame.grid(row=1, column=0)
+
+        self.songid_entry = tk.Entry(self.songid_frame)
+        self.songid_entry.grid(row=0, column=0)
 
         self.songid_entry.bind("<Return>", self.on_songid)
+
+        self.song_delete_button = tk.Button(self.songid_frame, text="Delete", command=self.delete_song)
+        self.song_delete_button.grid(row=0, column=1)
+
 
         
         ### Song Details ###
@@ -525,6 +532,7 @@ class Program:
         self.music_order_window.grid_columnconfigure(0, weight=1)
 
     def disable_all_widgets(self, parent):
+        self.song_delete_button.config(state="disabled")
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
@@ -534,6 +542,7 @@ class Program:
                 self.disable_all_widgets(child)  # Recurse into frames
 
     def enable_all_widgets(self, parent):
+        self.song_delete_button.config(state="normal")
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
@@ -543,6 +552,21 @@ class Program:
                 child.config(state="normal")
             elif isinstance(child, (tk.Frame, tk.LabelFrame)):
                 self.enable_all_widgets(child)  # Recurse into frames
+
+    def delete_song(self, *args):
+        if messagebox.askyesno('Delete Song', f'Are you sure you want to delete song {self.current_songid}?'):
+            try:
+                self.datatable.delete_song(self.current_songid)
+                self.song_info = dt.Song()
+                self.current_songid = ""
+                self.populate_ui(True)
+                self.songid_entry.delete(0, tk.END)
+                self.disable_all_widgets(self.window)
+                self.initial = True
+                messagebox.showinfo('Delete Song', 'Song deleted successfully')
+            except Exception as e:
+                messagebox.showerror('Delete Song', f'Delete Song Error: {e}')
+                return
 
 
     def on_new_song(self, *args):
