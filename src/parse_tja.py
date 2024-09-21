@@ -96,7 +96,7 @@ def parse_line(line):
             }
     
     # data
-    match = re.match(r'^(([0-9]|A|B|C|F|G)*,?)$', line)
+    match = re.match(r'^(([0-9]|A|B|C|F|G|n|d|o|t|k)*,?)$', line)
     if match:
         data = match.group(1)
         return {
@@ -378,9 +378,9 @@ def convert_to_timed(course):
 
             note = {'type': '', 'beat': beat + n_beat}
 
-            if ch == '1':
+            if ch in ['1', 'n', 'd', 'o']:
                 note['type'] = 'don'
-            elif ch == '2':
+            elif ch in ['2', 't', 'k']:
                 note['type'] = 'kat'
             elif ch == '3' or ch == 'A':
                 note['type'] = 'donBig'
@@ -528,6 +528,12 @@ class SongData:
     fuusen_total: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
 
     
+def round_five_down(n):
+    """
+    Custom rounding function that rounds .5 down instead of up.
+    Who the fuck does this???
+    """
+    return floor(n + 0.49999999999999994)
 
 def parse_and_get_data(tja_file: str) -> SongData:
     """Takes in a tja fname and returns a parse_tja.SongData object"""
@@ -535,7 +541,7 @@ def parse_and_get_data(tja_file: str) -> SongData:
     file_str = None  # Initialize file_str to avoid the UnboundLocalError
 
     # Try opening the file with different encodings
-    encodings = ['shiftjis', 'shift_jisx0213', 'utf-8-sig', 'utf-8', 'shift_jis_2004', 'latin-1']
+    encodings = ['utf-8-sig', 'shiftjis', 'shift_jisx0213', 'utf-8', 'shift_jis_2004', 'latin-1']
     for encoding in encodings:
         try:
             with open(tja_file, encoding=encoding) as file:
@@ -564,11 +570,13 @@ def parse_and_get_data(tja_file: str) -> SongData:
         ret.renda_time[i] = sum(stats['rendas'])
 
         #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
-        ret.shinuti[i] = (floor(100_000.0 / ret.onpu_num[i]) if ret.renda_time[i] > 0.5 else ceil(100_000.0 / ret.onpu_num[i])) * 10 
-        ret.shinuti_score[i] = round((ret.shinuti[i] * ret.onpu_num[i] + 17.5 * ret.renda_time[i] * 100) / 10) * 10
+        ret.shinuti[i] = round_five_down(100_000.0 / ret.onpu_num[i]) * 10
+        estimated_renda = ret.renda_time[i] * ((37 + ((63 / 16) * (max(4, i + 1) ** 2))) / 6)
+        initial = max(ceil(((1_000_000 - ((ret.fuusen_total[i] + estimated_renda) * 100)) / ret.onpu_num[i]) / 10) * 10, 0)
+        ret.shinuti_score[i] = round(initial * ret.onpu_num[i] + (ret.fuusen_total[i] + estimated_renda) * 100)
     file.close()
     return ret
         
     
 if __name__ == '__main__':
-    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\The Future of the Taiko Drum.tja'))
+    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\ココドコ？多分ドッカ島！.tja'))
