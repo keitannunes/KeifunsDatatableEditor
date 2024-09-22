@@ -431,9 +431,9 @@ def get_statistics(course):
     sc_balloon = [0, 0]
     sc_balloon_pop = [0, 0]
     sc_potential = 0
-
+    current_bpm = 0
+    bpm_at_renda_start = 0
     type_note = ['don', 'kat', 'donBig', 'katBig']
-
     for i, note in enumerate(course['notes']):
         # Check and handle events
         if sc_cur_event and sc_cur_event['beat'] <= note['beat']:
@@ -442,7 +442,8 @@ def get_statistics(course):
                     sc_gogo = 1
                 elif sc_cur_event['type'] == 'gogoEnd':
                     sc_gogo = 0
-
+                elif sc_cur_event['type'] == 'bpm':
+                    current_bpm = float(sc_cur_event['value'])
                 sc_cur_event_idx += 1
                 if sc_cur_event_idx < len(course['events']):
                     sc_cur_event = course['events'][sc_cur_event_idx]
@@ -479,22 +480,24 @@ def get_statistics(course):
 
         if note['type'] in ('renda', 'rendaBig'):
             renda_start = note['time']
+            bpm_at_renda_start = current_bpm
             continue
 
         elif note['type'] == 'balloon':
             balloon_start = note['time']
             balloon_count = note['count']
+            bpm_at_renda_start = current_bpm
             balloon_gogo = sc_gogo
             continue
 
         elif note['type'] == 'end':
             if renda_start:
-                rendas.append(note['time'] - renda_start)
+                rendas.append([note['time'] - renda_start, bpm_at_renda_start])
                 renda_start = False
             elif balloon_start:
                 balloon_length = note['time'] - balloon_start
                 balloon_speed = balloon_count / balloon_length
-                balloons.append([balloon_length, balloon_count])
+                balloons.append([balloon_length, balloon_count, balloon_speed > 40, bpm_at_renda_start])
                 balloon_start = False
 
                 if balloon_speed <= 60:
@@ -527,14 +530,6 @@ class SongData:
     renda_time: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     fuusen_total: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
 
-    
-def round_five_down(n):
-    """
-    Custom rounding function that rounds .5 down instead of up.
-    Who the fuck does this???
-    """
-    return floor(n + 0.49999999999999994)
-
 def parse_and_get_data(tja_file: str) -> SongData:
     """Takes in a tja fname and returns a parse_tja.SongData object"""
     ret = SongData()
@@ -562,21 +557,48 @@ def parse_and_get_data(tja_file: str) -> SongData:
     ret.title = parsed['headers']['title']
     sub = parsed['headers']['subtitle']
     ret.sub = sub[2::] if sub.startswith('--') else sub 
-    for i in parsed['courses'].keys():
+    for i in [3]:#parsed['courses'].keys():
         ret.star[i] = parsed['courses'][i]['headers']['level']
         stats = get_statistics(convert_to_timed(parsed['courses'][i]))
         ret.onpu_num[i] = stats['totalCombo']
         ret.fuusen_total[i] = sum(x[1] for x in stats['balloons'])
-        ret.renda_time[i] = sum(stats['rendas'])
+        impoppable_balloon_s = 0.0 #BTD reference???
+        impoppable_balloon_count = 0
+        poppable_balloon_count = 0
+        required_renda_speed = 17 #HARDCODED
+        for time, count, impoppable, bpm_start in stats['balloons']:
+            if impoppable:
+                impoppable_balloon_s += time
+                impoppable_balloon_count += count
+
+                #If impoppable add to renda speed
+                # number_of_beats = bpm_start / 60 * time # (BPM / 60) = BPS, BPS*TIME(S) = Beats
+                # required_renda_speed += 60 / bpm_start * (number_of_beats * 12 - 1) / 12
+            else:
+                poppable_balloon_count += count
+
+        for time, bpm_start in stats['rendas']:
+            ret.renda_time[i] += time
+            # number_of_beats = bpm_start / 60 * time  # (BPM / 60) = BPS, BPS*TIME(S) = Beats
+            # required_renda_speed += 60 / bpm_start * (number_of_beats * 12 - 1) / 12
 
         #Most of the time this is correct, but you know namco is retarded and loves to overcomplicate shit
-        ret.shinuti[i] = round_five_down(100_000.0 / ret.onpu_num[i]) * 10
-        estimated_renda = ret.renda_time[i] * ((37 + ((63 / 16) * (max(4, i + 1) ** 2))) / 6)
-        initial = max(ceil(((1_000_000 - ((ret.fuusen_total[i] + estimated_renda) * 100)) / ret.onpu_num[i]) / 10) * 10, 0)
-        ret.shinuti_score[i] = round(initial * ret.onpu_num[i] + (ret.fuusen_total[i] + estimated_renda) * 100)
-    file.close()
+
+        ## Old shit
+        # ret.shinuti[i] = round_five_down(100_000.0 / ret.onpu_num[i]) * 10
+        # estimated_renda = ret.renda_time[i] * ((37 + ((63 / 16) * (max(4, i + 1) ** 2))) / 6)
+        # initial = max(ceil(((1_000_000 - ((ret.fuusen_total[i] + estimated_renda) * 100)) / ret.onpu_num[i]) / 10) * 10, 0)
+        # ret.shinuti_score[i] = round(initial * ret.onpu_num[i] + (ret.fuusen_total[i] + estimated_renda) * 100)
+
+        ## New shit
+        required_renda_speed = 17 #HARDCODED
+        roll_duration_int = round(ret.renda_time[i]) + round(impoppable_balloon_s)
+        roll_duration = ret.renda_time[i] + impoppable_balloon_s
+        ret.shinuti[i] = ceil((100_000.0 - 10 * (floor(required_renda_speed * roll_duration_int / 1000) + poppable_balloon_count)) / ret.onpu_num[i]) * 10
+        tenjyou = ret.shinuti[i] * ret.onpu_num[i] + 100 * (floor(required_renda_speed * roll_duration / 1000) + poppable_balloon_count)
+        ret.shinuti_score[i] = tenjyou + floor(required_renda_speed * roll_duration) * 100
     return ret
         
     
 if __name__ == '__main__':
-    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\ココドコ？多分ドッカ島！.tja'))
+    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\poxeiDOON.tja'))
