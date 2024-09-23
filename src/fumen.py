@@ -1,8 +1,10 @@
-from tja2fumen.parsers import parse_tja
-from tja2fumen.converters import convert_tja_to_fumen, fix_dk_note_types_course
-from tja2fumen.writers import write_fumen
-from tja2fumen.constants import COURSE_IDS
-from tja2fumen.classes import TJACourse, TJAMeasure, TJAData
+from typing import LiteralString
+
+from src.tja2fumen.parsers import parse_tja, parse_fumen
+from src.tja2fumen.converters import convert_tja_to_fumen, fix_dk_note_types_course
+from src.tja2fumen.writers import write_fumen
+from src.tja2fumen.constants import COURSE_IDS
+from src.tja2fumen.classes import TJACourse, TJAMeasure, TJAData
 from pydub import AudioSegment
 import os, re
 from src import encryption, nus3bank
@@ -12,7 +14,7 @@ def convert_and_write(tja_data: TJACourse,
                       course_name: str,
                       base_name: str,
                       single_course: bool,
-                      temp_dir: str) -> None:
+                      temp_dir: str) -> list[str]:
     """Process the parsed data for a single TJA course."""
     fumen_data = convert_tja_to_fumen(tja_data)
     # Fix don/ka types
@@ -26,9 +28,12 @@ def convert_and_write(tja_data: TJACourse,
         output_name += f"_{COURSE_IDS[split_name[0]]}"
 
     # Write to the temp_dir instead of hardcoded 'temp' directory
-    write_fumen(os.path.join(temp_dir, f"{output_name}.bin"), fumen_data)
-    write_fumen(os.path.join(temp_dir, f"{output_name}_1.bin"), fumen_data)
-    write_fumen(os.path.join(temp_dir, f"{output_name}_2.bin"), fumen_data)
+    out_files = [f"{output_name}.bin", f"{output_name}_1.bin", f"{output_name}_2.bin"]
+    for i in range(3):
+        out_files[i] = os.path.join(temp_dir, out_files[i])
+        write_fumen(out_files[i], fumen_data)
+
+    return out_files
 
 def normalize_fumen(sound_file: str, offset_ms: float, bpm: float) -> tuple[float, float]:
     """
@@ -68,9 +73,9 @@ def normalize_fumen(sound_file: str, offset_ms: float, bpm: float) -> tuple[floa
 
 
 
-def convert_tja_to_fumen_files(id: str, tja_file: str, audio_file: str, preview_point_ms: float, start_blank_length_ms: float, out_path: str) -> None:
+def convert_tja_to_fumen_files(song_id: str, tja_file: str, audio_file: str, preview_point_ms: float, start_blank_length_ms: float, out_path: str) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-        fumen_out = os.path.join(out_path, 'fumen', id)
+        fumen_out = os.path.join(out_path, 'fumen', song_id)
         sound_out = os.path.join(out_path, 'sound')
 
         if not os.path.exists(fumen_out):
@@ -98,16 +103,17 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, audio_file: str, preview_
         parsed_tja.offset = offset_s
 
         # Convert parsed TJA courses and write each course to `.bin` files inside temp_dir
+        print(parsed_tja.courses.keys())
         for course_name in parsed_tja.courses.keys():
             parsed_tja.courses[course_name].offset = offset_s
-            convert_and_write(parsed_tja.courses[course_name], course_name, id,
+            convert_and_write(parsed_tja.courses[course_name], course_name, song_id,
                               single_course=len(parsed_tja.courses) == 1,
                               temp_dir=temp_dir)  # Use temp_dir for output
 
         # Encrypt TJAs from temp_dir
         for path, subdirs, files in os.walk(temp_dir):
             for name in files:
-                if not re.match(rf'^{id}.*\.bin$', name):
+                if not re.match(rf'^{song_id}.*\.bin$', name):
                     continue
                 in_path = os.path.join(path, name)
                 out_path = os.path.join(fumen_out, name)
@@ -120,6 +126,42 @@ def convert_tja_to_fumen_files(id: str, tja_file: str, audio_file: str, preview_
                     )
 
         #Convert to nus3bank and export
-        nus3bank.wav_to_idsp_to_nus3bank(temp_audio_path, os.path.join(sound_out, f'song_{id}.nus3bank'), int(preview_point_ms), id) 
-        
+        nus3bank.wav_to_idsp_to_nus3bank(temp_audio_path, os.path.join(sound_out, f'song_{song_id}.nus3bank'), int(preview_point_ms), song_id)
 
+def get_offset_from_file(fumen_file: LiteralString | str | bytes ) -> float:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        decrypted_file = os.path.join(temp_dir, 'decrypted.bin')
+        encryption.save_file(
+            file=fumen_file,  # type: ignore
+            outdir=decrypted_file,
+            encrypt=False,
+            is_fumen=True
+        )
+        parsed = parse_fumen(decrypted_file)
+        return parsed.measures[0].offset_start / 1000
+
+def add_ura_to_song(song_id, tja_file, out_path) -> None:
+    fumen_out_dir = os.path.join(out_path, 'fumen', song_id)
+    fumen_in = os.path.join(fumen_out_dir, f'{song_id}_m.bin') #Out dir is also in dir for the fumen file in to get offset
+    if not os.path.isfile(fumen_in):
+        raise Exception(f'file {fumen_in} not found')
+
+    offset_s = get_offset_from_file(fumen_in) * -1
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        parsed_tja = parse_tja(tja_file)
+        offset_s -= 4 * 60 / parsed_tja.bpm
+        parsed_tja.offset = offset_s
+        course = 'Ura'
+        parsed_tja.courses[course].offset = offset_s
+        unencrypted_files = convert_and_write(parsed_tja.courses[course], course, song_id,
+                          False,
+                          temp_dir=temp_dir)  # Use temp_dir for output
+        for in_path in unencrypted_files:
+            if os.path.isfile(in_path):
+                encryption.save_file(
+                    file=in_path,  # type: ignore
+                    outdir=os.path.join(fumen_out_dir, os.path.basename(in_path)),
+                    encrypt=True,
+                    is_fumen=True
+                )

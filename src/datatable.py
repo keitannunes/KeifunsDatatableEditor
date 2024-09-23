@@ -163,11 +163,11 @@ class MusicOrderItem:
 class MusicAISectionItem:
     id: str = ""
     uniqueId: int = 0
-    easy: int = 0
-    normal: int = 0
-    hard: int = 0
-    oni: int = 0
-    ura: int = 0
+    easy: int = 5
+    normal: int = 5
+    hard: int = 5
+    oni: int = 5
+    ura: int = 5
     oniLevel11: str = ""
     uraLevel11: str = ""
 
@@ -262,11 +262,11 @@ class Datatable:
             wordlist_detail_index = -1
             for i,e in enumerate(self.wordlist):
                 if e.key == f"song_{id}": #You can't use f strings in switch statement?
-                    wordlist_name_index = i
+                    if wordlist_name_index == -1: wordlist_name_index = i
                 elif e.key == f"song_sub_{id}":
-                    wordlist_sub_index = i
+                    if wordlist_sub_index == -1: wordlist_sub_index = i
                 elif e.key == f"song_detail_{id}":
-                    wordlist_detail_index = i
+                    if wordlist_detail_index == -1: wordlist_detail_index = i
                 else:
                     continue #No point in checking if condition below if current element isn't a match
                 if wordlist_detail_index != -1 and wordlist_sub_index != -1 and wordlist_name_index != -1:

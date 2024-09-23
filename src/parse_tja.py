@@ -557,7 +557,7 @@ def parse_and_get_data(tja_file: str) -> SongData:
     ret.title = parsed['headers']['title']
     sub = parsed['headers']['subtitle']
     ret.sub = sub[2::] if sub.startswith('--') else sub 
-    for i in [3]:#parsed['courses'].keys():
+    for i in parsed['courses'].keys():
         ret.star[i] = parsed['courses'][i]['headers']['level']
         stats = get_statistics(convert_to_timed(parsed['courses'][i]))
         ret.onpu_num[i] = stats['totalCombo']
