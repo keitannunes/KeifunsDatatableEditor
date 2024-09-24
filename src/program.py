@@ -804,8 +804,8 @@ class Program:
 
             # Label and Spinbox for Preview Offset inside the time_frame
             tk.Label(time_frame, text="Preview Offset:").grid(row=0, column=0, padx=10, pady=2)
-            preview_offset_spinbox = tk.Spinbox(
-                time_frame, from_=0.0, to=99999, increment=0.1, format="%.1f", width=8,
+            preview_offset_spinbox = tk.Entry(
+                time_frame, width=15,
                 textvariable=preview_offset_var
             )
             preview_offset_spinbox.grid(row=0, column=1, padx=10, pady=2)
@@ -919,12 +919,17 @@ class Program:
             traceback.print_exc()
             return
 
+        if data.star[4] == 0:
+            messagebox.showerror('Add Ura to Chart', f'TJA File has no Ura chart')
+            return
+
         path_to_x64 = filedialog.askdirectory(initialdir=config.config.gameFilesOutDir, title="Import/Export Directory (x64 directory)")
 
         try:
             fumen.add_ura_to_song(song_id, tja_path, path_to_x64)
         except Exception as e:
             messagebox.showerror('Add Ura to Chart', f'Add Ura to Chart Error: {e}')
+            return
 
         self.song_info = self.datatable.get_song_info(song_id)
         self.song_info.star[4] = data.star[4]
