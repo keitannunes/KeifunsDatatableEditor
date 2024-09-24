@@ -163,11 +163,11 @@ class MusicOrderItem:
 class MusicAISectionItem:
     id: str = ""
     uniqueId: int = 0
-    easy: int = 0
-    normal: int = 0
-    hard: int = 0
-    oni: int = 0
-    ura: int = 0
+    easy: int = 5
+    normal: int = 5
+    hard: int = 5
+    oni: int = 5
+    ura: int = 5
     oniLevel11: str = ""
     uraLevel11: str = ""
 
@@ -230,6 +230,18 @@ class Datatable:
         self.parse_music_AI_section()
         self.parse_music_usbsetting()
 
+    def create_default_item(self, field_name: str):
+        if field_name == 'musicinfo':
+            return MusicinfoItem()
+        elif field_name == 'music_attribute':
+            return MusicAttributeItem()
+        elif field_name == 'music_ai_section':
+            return MusicAISectionItem()
+        elif field_name == 'music_usbsetting':
+            return MusicUsbsettingItem()
+        else:
+            raise ValueError(f"Unknown field name: {field_name}")
+
     def get_indices(self, id: str) -> DatatableIndices:
         indices: DatatableIndices
         if id in self.indices:
@@ -250,11 +262,11 @@ class Datatable:
             wordlist_detail_index = -1
             for i,e in enumerate(self.wordlist):
                 if e.key == f"song_{id}": #You can't use f strings in switch statement?
-                    wordlist_name_index = i
+                    if wordlist_name_index == -1: wordlist_name_index = i
                 elif e.key == f"song_sub_{id}":
-                    wordlist_sub_index = i
+                    if wordlist_sub_index == -1: wordlist_sub_index = i
                 elif e.key == f"song_detail_{id}":
-                    wordlist_detail_index = i
+                    if wordlist_detail_index == -1: wordlist_detail_index = i
                 else:
                     continue #No point in checking if condition below if current element isn't a match
                 if wordlist_detail_index != -1 and wordlist_sub_index != -1 and wordlist_name_index != -1:
@@ -290,8 +302,15 @@ class Datatable:
 
             for field in fields(indices):
                 if getattr(indices, field.name) == -1:
-                    raise ValueError(f"Could not find {id} in {field.name}") #-1 for underscore, Value Error probably
-                    
+                    # Append a new element
+                    if field.name.startswith('wordlist'):
+                        new_index = len(self.wordlist)
+                        self.wordlist.append(WordlistItem())
+                    else:
+                        new_index = len(getattr(self, field.name))
+                        getattr(self, field.name).append(self.create_default_item(field.name))
+                    setattr(indices, field.name, new_index)
+
             self.indices[id] = indices
         return indices
 
@@ -573,12 +592,78 @@ class Datatable:
                     # Otherwise, insert at the specific position
                     genre_list.insert(new_position, song_item)
 
+    def delete_song(self, id: str):
+        indices = self.get_indices(id)
+
+        # Create a list of (index, attribute) tuples for wordlist items
+        wordlist_indices = [
+            (indices.wordlist_name, 'wordlist_name'),
+            (indices.wordlist_sub, 'wordlist_sub'),
+            (indices.wordlist_detail, 'wordlist_detail')
+        ]
+        # Sort by index in descending order
+        wordlist_indices.sort(key=lambda x: x[0], reverse=True)
+
+        # Delete wordlist items
+        for index, attr in wordlist_indices:
+            del self.wordlist[index]
+            # Update indices for remaining deletions
+            for i, (idx, a) in enumerate(wordlist_indices):
+                if idx > index:
+                    wordlist_indices[i] = (idx - 1, a)
+            # Update the original indices
+            setattr(indices, attr, index)
+
+        # Delete other items
+        del self.musicinfo[indices.musicinfo]
+        del self.music_attribute[indices.music_attribute]
+        del self.music_ai_section[indices.music_ai_section]
+        del self.music_usbsetting[indices.music_usbsetting]
+
+        # Update indices for all songs
+        for song_id, song_indices in self.indices.items():
+            if song_id != id:  # Skip the deleted song
+                # Update wordlist indices
+                for attr in ['wordlist_name', 'wordlist_sub', 'wordlist_detail']:
+                    if getattr(song_indices, attr) > getattr(indices, attr):
+                        setattr(song_indices, attr, getattr(song_indices, attr) - 1)
+                    elif getattr(indices, attr) < getattr(song_indices, attr) <= original_indices[attr]:
+                        setattr(song_indices, attr, getattr(song_indices, attr) - 1)
+
+                # Update other indices
+                if song_indices.musicinfo > indices.musicinfo:
+                    song_indices.musicinfo -= 1
+                if song_indices.music_attribute > indices.music_attribute:
+                    song_indices.music_attribute -= 1
+                if song_indices.music_ai_section > indices.music_ai_section:
+                    song_indices.music_ai_section -= 1
+                if song_indices.music_usbsetting > indices.music_usbsetting:
+                    song_indices.music_usbsetting -= 1
+
+        # Remove the deleted song's indices from the dictionary
+        del self.indices[id]
+
+        # Update uid_musicinfo_index_mapping
+        updated_mapping = {}
+        for uid, index in self.uid_musicinfo_index_mapping.items():
+            if index == indices.musicinfo:
+                continue  # Skip the deleted song
+            elif index > indices.musicinfo:
+                updated_mapping[uid] = index - 1
+            else:
+                updated_mapping[uid] = index
+        self.uid_musicinfo_index_mapping = updated_mapping
+
+        # Update music_order list
+        for order in self.music_order:
+            order[:] = [item for item in order if item.id != id]
+
+
     def is_song_id_taken(self, song_id: str) -> bool:
         if song_id in self.indices: return True
         for e in self.musicinfo:
             if e.id == song_id: return True
         return False
-        
 
     def is_uid_taken(self, uniqueId: int) -> bool:
         if uniqueId in self.uid_musicinfo_index_mapping:

@@ -2,10 +2,9 @@
 NAME = KeifunsDatatableEditor
 MAIN_FILE = main.py
 ICON = ./src/assets/icon.ico
-ASSETS = ./src/assets/*.png
+ASSETS_DIR = ./src/assets
 TEMPLATES = ./templates
 BIN = ./bin/*
-HOOKS_DIR = ./hooks
 VERSION_FILE = ./version_info.txt
 
 # PyInstaller command
@@ -13,15 +12,24 @@ PYINSTALLER = pyinstaller
 
 # PyInstaller options
 PYINSTALLER_OPTS = --onefile --windowed --icon=$(ICON) --name $(NAME) --version-file=$(VERSION_FILE)
+PYINSTALLER_DEBUG_OPTS = --onefile --icon=$(ICON) --name "$(NAME) Debug" --version-file=$(VERSION_FILE)
+
 
 # Build command
 .PHONY: build
 build: clean
 	$(PYINSTALLER) $(PYINSTALLER_OPTS) \
-		--add-data "$(ASSETS);src/assets/" \
+		--add-data "$(ASSETS_DIR);src/assets" \
 		--add-data "$(TEMPLATES);templates" \
 		--add-binary "$(BIN);bin" \
-		--additional-hooks-dir=$(HOOKS_DIR) \
+		$(MAIN_FILE)
+
+.PHONY: debug
+debug:
+	$(PYINSTALLER) $(PYINSTALLER_DEBUG_OPTS) \
+		--add-data "$(ASSETS_DIR);src/assets" \
+		--add-data "$(TEMPLATES);templates" \
+		--add-binary "$(BIN);bin" \
 		$(MAIN_FILE)
 
 # Clean command
@@ -31,8 +39,3 @@ clean:
 	@if exist dist rmdir /S /Q dist
 	@if exist build rmdir /S /Q build
 	@if exist $(NAME).spec del /F /Q $(NAME).spec
-
-# Run full setup (clean, hook creation, and build)
-.PHONY: all
-all: clean create_hook_tja2fumen build
-

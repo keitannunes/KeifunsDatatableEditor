@@ -142,7 +142,7 @@ class Program:
     previous_language: int
     datatable: dt.Datatable
     song_info: dt.Song
-    initial: bool
+    initial: bool #I'm genuinely convinced this variable is never used, scared and lazy to check
     duet_change_ignore_flag: bool #I absolutely fucking hate this variable; Theres definitely a better solution that my retarded ass cannot think of
 
     def __init__(self):
@@ -172,6 +172,12 @@ class Program:
         self.file_menu.add_command(label="Exit", command=self.window.quit)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
 
+        #Utilities Menu
+
+        self.util_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.util_menu.add_command(label="Add Ura to Chart", accelerator="Ctrl+U", command=self.on_add_ura)
+        self.menu_bar.add_cascade(label="Utilities", menu=self.util_menu)
+
         #Help Menu
         
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -187,15 +193,23 @@ class Program:
         self.window.bind("<Control-o>", self.open_datatable) #type: ignore
         self.window.bind("<Control-s>", self.save_datatable) #type: ignore
         self.window.bind("<Control-,>", self.create_config_window) #type: ignore
+        self.window.bind("<Control-u>", self.on_add_ura)  # type: ignore
 
 
         self.songid_label = tk.Label(self.window, text="Song Id:")
-        self.songid_entry = tk.Entry(self.window)
-
         self.songid_label.grid(row=0, column=0)
-        self.songid_entry.grid(row=1, column=0)
+
+        self.songid_frame = tk.Frame(self.window)
+        self.songid_frame.grid(row=1, column=0)
+
+        self.songid_entry = tk.Entry(self.songid_frame)
+        self.songid_entry.grid(row=0, column=0)
 
         self.songid_entry.bind("<Return>", self.on_songid)
+
+        self.song_delete_button = tk.Button(self.songid_frame, text="Delete", command=self.delete_song)
+        self.song_delete_button.grid(row=0, column=1)
+
 
         
         ### Song Details ###
@@ -525,6 +539,7 @@ class Program:
         self.music_order_window.grid_columnconfigure(0, weight=1)
 
     def disable_all_widgets(self, parent):
+        self.song_delete_button.config(state="disabled")
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
@@ -534,6 +549,7 @@ class Program:
                 self.disable_all_widgets(child)  # Recurse into frames
 
     def enable_all_widgets(self, parent):
+        self.song_delete_button.config(state="normal")
         for child in parent.winfo_children():
             if child == self.songid_entry:
                 continue 
@@ -543,6 +559,21 @@ class Program:
                 child.config(state="normal")
             elif isinstance(child, (tk.Frame, tk.LabelFrame)):
                 self.enable_all_widgets(child)  # Recurse into frames
+
+    def delete_song(self, *args):
+        if messagebox.askyesno('Delete Song', f'Are you sure you want to delete song {self.current_songid}?'):
+            try:
+                self.datatable.delete_song(self.current_songid)
+                self.song_info = dt.Song()
+                self.current_songid = ""
+                self.populate_ui(True)
+                self.songid_entry.delete(0, tk.END)
+                self.disable_all_widgets(self.window)
+                self.initial = True
+                messagebox.showinfo('Delete Song', 'Song deleted successfully')
+            except Exception as e:
+                messagebox.showerror('Delete Song', f'Delete Song Error: {e}')
+                return
 
 
     def on_new_song(self, *args):
@@ -554,6 +585,7 @@ class Program:
                 self.save_song()
             except Exception as e:
                 messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                traceback.print_exc()
                 return
 
         self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
@@ -615,6 +647,7 @@ class Program:
                 self.save_song()
             except Exception as e:
                 messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                traceback.print_exc()
                 return
         
         self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
@@ -771,8 +804,8 @@ class Program:
 
             # Label and Spinbox for Preview Offset inside the time_frame
             tk.Label(time_frame, text="Preview Offset:").grid(row=0, column=0, padx=10, pady=2)
-            preview_offset_spinbox = tk.Spinbox(
-                time_frame, from_=0.0, to=99999, increment=0.1, format="%.1f", width=8,
+            preview_offset_spinbox = tk.Entry(
+                time_frame, width=15,
                 textvariable=preview_offset_var
             )
             preview_offset_spinbox.grid(row=0, column=1, padx=10, pady=2)
@@ -824,6 +857,94 @@ class Program:
         if self.initial:
             self.initial = False
             # self.enable_all_widgets(self.window)
+
+    def on_add_ura(self, *args):
+        if not hasattr(self, 'datatable'):
+            messagebox.showerror('Add Ura to Chart', 'No datatable loaded')
+            return
+
+        if self.current_songid:
+            try:
+                self.save_song()
+            except Exception as e:
+                messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                traceback.print_exc()
+                return
+
+        self.new_song_window = tk.Toplevel(self.window, pady=10, padx=10)
+        self.new_song_window.attributes('-toolwindow', True)
+
+        self.new_song_window.grab_set()
+        self.new_song_window.title(f'Add Ura to Chart')
+
+        self.new_song_id_label = tk.Label(self.new_song_window, text="Song Id:", anchor="w", width=20)
+        self.new_song_id_label.grid(row=0, column=0)
+        # self.new_song_id_frame = tk.Frame(self.new_song_window)
+        # self.new_song_id_frame.grid(row=1, column=0)
+        self.new_song_id_entry = tk.Entry(self.new_song_window)
+        self.new_song_id_entry.grid(row=1, column=0, padx=5)
+        self.new_song_id_entry.focus()
+
+        song_id = ''
+
+        def on_create(*args):
+            nonlocal song_id
+            new_id_candidate = self.new_song_id_entry.get()
+            if not new_id_candidate:
+                messagebox.showerror('Add Ura to Chart', 'Enter a Song Id')
+                return
+            if not self.datatable.is_song_id_taken(new_id_candidate):
+                messagebox.showerror('Add Ura to Chart', 'Song Id not found')
+                return
+            song_id = new_id_candidate
+            self.new_song_window.destroy()
+
+
+        self.new_song_id_entry.bind('<Return>', on_create)
+        self.new_song_confirm = tk.Button(self.new_song_window, text="Create", command=on_create)  # type: ignore
+        self.new_song_confirm.grid(row=1, column=1)
+
+        self.new_song_window.wait_window()
+
+        if not song_id: return
+
+        tja_path = filedialog.askopenfilename(title="Select a TJA file", filetypes=[("TJA File", ".tja")])
+        if not tja_path:
+            return
+
+        try:
+            data = parse_tja.parse_and_get_data(tja_path)
+        except Exception as e:
+            messagebox.showerror('TJA Import', f'TJA Import Error: {e}')
+            traceback.print_exc()
+            return
+
+        if data.star[4] == 0:
+            messagebox.showerror('Add Ura to Chart', f'TJA File has no Ura chart')
+            return
+
+        path_to_x64 = filedialog.askdirectory(initialdir=config.config.gameFilesOutDir, title="Import/Export Directory (x64 directory)")
+
+        try:
+            fumen.add_ura_to_song(song_id, tja_path, path_to_x64)
+        except Exception as e:
+            messagebox.showerror('Add Ura to Chart', f'Add Ura to Chart Error: {e}')
+            return
+
+        self.song_info = self.datatable.get_song_info(song_id)
+        self.song_info.star[4] = data.star[4]
+        self.song_info.shinuti[4] = data.shinuti[4]
+        self.song_info.shinuti_score[4] = data.shinuti_score[4]
+        self.song_info.onpu_num[4] = data.onpu_num[4]
+        self.song_info.fuusen_total[4] = data.fuusen_total[4]
+        self.song_info.renda_time[4] = data.renda_time[4]
+        self.songid_entry.delete(0, tk.END)
+        self.songid_entry.insert(0, song_id)
+        self.current_songid = song_id
+        self.populate_ui(no_query=True)
+        if self.initial:
+            self.initial = False
+
 
     def check_and_confirm_uid(self, uniqueId: int) -> bool:
         """
@@ -879,6 +1000,7 @@ class Program:
                 self.save_song()
             except Exception as e:
                 messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                traceback.print_exc()
                 return
         selected_directory = filedialog.askdirectory(title="Select an export directory")
         if not selected_directory:
@@ -897,6 +1019,7 @@ class Program:
                 self.save_song()
             except Exception as e:
                 messagebox.showerror('Save Song', f'Song Save Error: {e}')
+                traceback.print_exc()
                 return
         selected_directory = filedialog.askdirectory(title="Select an import directory")
         if not selected_directory:
@@ -1016,6 +1139,7 @@ class Program:
                 self.save_song()
             except Exception as e:
                 messagebox.showerror('Song Save Error', f'Song Save Error: {e}')
+                traceback.print_exc()
                 self.current_songid = old_songid
                 self.songid_entry.delete(0, tk.END)
                 self.songid_entry.insert(0, old_songid)
@@ -1116,9 +1240,3 @@ class Program:
         self.song_sub_font_var.set(self.song_info.songSubList[self.language_value.get()][1])
         self.song_detail_var.set(self.song_info.songDetailList[self.language_value.get()][0])
         self.song_detail_font_var.set(self.song_info.songDetailList[self.language_value.get()][1])
-
-
-
-if __name__ == "__main__":
-    ui = Program()
-    ui.run()

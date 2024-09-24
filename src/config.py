@@ -17,8 +17,8 @@ class Config:
             os.makedirs(self.appdata_dir)
 
         default_config = {
-            "datatableKey": "",
-            "fumenKey": "",
+            "datatableKey": "3530304242323633353537423431384139353134383346433246464231354534",
+            "fumenKey": "4434423946383537303842433443383030333843444132343339373531353830",
             "gameFilesOutDir": "",
             "dancers": {
                 "001_miku": {
@@ -335,10 +335,10 @@ class Config:
 
         # Check for missing keys and update with defaults if necessary
         updated = False
-        if 'datatableKey' not in d:
+        if 'datatableKey' not in d or not d['datatableKey']:
             d['datatableKey'] = default_config['datatableKey']
             updated = True
-        if 'fumenKey' not in d:
+        if 'fumenKey' not in d or not d['fumenKey']:
             d['fumenKey'] = default_config['fumenKey']
             updated = True
         if 'gameFilesOutDir' not in d:
