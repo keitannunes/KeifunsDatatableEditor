@@ -507,7 +507,7 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
 
     NB: Modifies FumenNote objects in-place
     """
-    big_notes = ['DON', 'DON2', 'KA', 'KA2', 'Don2']
+    big_notes = ['DON', 'DON2', 'KA', 'KA2', 'Don3']
     for cluster in note_clusters:
         # Replace all small notes with the basic do/ka notes ("Don2", "Ka2")
         for note in cluster:
