@@ -11,7 +11,6 @@ KeifunsDatatableEditor (KDE) is a replacement for TaikoSoundEditor (TSE), specif
 - **Create Fumen and Sound Files**: Generate fumen and sound files directly from TJA.
 
 ## Planned Features
-- Removing songs from the datatable
 - MusicAttribute tag editing
 - Song search by name/subtitle
 - Shougou/reward editing

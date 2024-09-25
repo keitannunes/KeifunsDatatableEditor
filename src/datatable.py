@@ -630,6 +630,7 @@ class Datatable:
                         if current_song_index > deleted_index:
                             setattr(song_indices, attr, current_song_index - 1)
 
+
                 # Update other indices
                 if song_indices.musicinfo > indices.musicinfo:
                     song_indices.musicinfo -= 1
