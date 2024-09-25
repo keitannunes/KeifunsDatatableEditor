@@ -624,10 +624,9 @@ class Datatable:
         for song_id, song_indices in self.indices.items():
             if song_id != id:  # Skip the deleted song
                 # Update wordlist indices
-                for attr in ['wordlist_name', 'wordlist_sub', 'wordlist_detail']:
-                    if getattr(song_indices, attr) > getattr(indices, attr):
-                        setattr(song_indices, attr, getattr(song_indices, attr) - 1)
-                    elif getattr(indices, attr) < getattr(song_indices, attr) <= original_indices[attr]:
+                for attr, (deleted_index, _) in zip(['wordlist_name', 'wordlist_sub', 'wordlist_detail'],
+                                                    wordlist_indices):
+                    if getattr(song_indices, attr) > deleted_index:
                         setattr(song_indices, attr, getattr(song_indices, attr) - 1)
 
                 # Update other indices
