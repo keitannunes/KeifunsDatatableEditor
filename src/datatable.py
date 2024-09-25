@@ -317,7 +317,7 @@ class Datatable:
     def get_song_info(self, id: str) -> Song:
         
         indices = self.get_indices(id)
-
+        print(indices)
         wordlist_name_item = self.wordlist[indices.wordlist_name]
         wordlist_sub_item = self.wordlist[indices.wordlist_sub]
         wordlist_detail_item = self.wordlist[indices.wordlist_detail]
@@ -601,6 +601,7 @@ class Datatable:
             (indices.wordlist_sub, 'wordlist_sub'),
             (indices.wordlist_detail, 'wordlist_detail')
         ]
+        wordlist_indices_copy = wordlist_indices[:]
         # Sort by index in descending order
         wordlist_indices.sort(key=lambda x: x[0], reverse=True)
 
@@ -624,10 +625,10 @@ class Datatable:
         for song_id, song_indices in self.indices.items():
             if song_id != id:  # Skip the deleted song
                 # Update wordlist indices
-                for attr, (deleted_index, _) in zip(['wordlist_name', 'wordlist_sub', 'wordlist_detail'],
-                                                    wordlist_indices):
-                    if getattr(song_indices, attr) > deleted_index:
-                        setattr(song_indices, attr, getattr(song_indices, attr) - 1)
+                for deleted_index, _ in wordlist_indices_copy:
+                    for current_song_index, attr in zip([song_indices.wordlist_name, song_indices.wordlist_sub, song_indices.wordlist_detail], ["wordlist_name", "wordlist_sub", "wordlist_detail"]):
+                        if current_song_index > deleted_index:
+                            setattr(song_indices, attr, current_song_index - 1)
 
                 # Update other indices
                 if song_indices.musicinfo > indices.musicinfo:
