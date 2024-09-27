@@ -302,10 +302,15 @@ class Datatable:
 
             for field in fields(indices):
                 if getattr(indices, field.name) == -1:
-                    # Append a new element
                     if field.name.startswith('wordlist'):
                         new_index = len(self.wordlist)
-                        self.wordlist.append(WordlistItem())
+                        parts = field.name.split('_')
+                        if parts[1] in ['detail', 'sub']:
+                            key = f"song_{parts[1]}_{id}"
+                        else:
+                            key = f"song_{id}"
+
+                        self.wordlist.append(WordlistItem(key=key))
                     else:
                         new_index = len(getattr(self, field.name))
                         getattr(self, field.name).append(self.create_default_item(field.name))
@@ -454,27 +459,8 @@ class Datatable:
         try:
             indices = self.get_indices(song_info.id)
         except KeyError:
-            #Set indices to length of each variable (index of appended item)
-            indices = DatatableIndices(
-                wordlist_name=len(self.wordlist),
-                wordlist_sub=len(self.wordlist)+1,
-                wordlist_detail=len(self.wordlist)+2,
-                musicinfo=len(self.musicinfo),
-                music_attribute=len(self.music_attribute),
-                music_ai_section=len(self.music_ai_section),
-                music_usbsetting=len(self.music_usbsetting)
-            )
-            self.indices[song_info.id] = indices
-
-            #Append each item
-
-            self.wordlist.append(WordlistItem(key=f'song_{song_info.id}'))
-            self.wordlist.append(WordlistItem(key=f'song_sub_{song_info.id}'))
-            self.wordlist.append(WordlistItem(key=f'song_detail_{song_info.id}'))
             self.musicinfo.append(MusicinfoItem(id=song_info.id, uniqueId=song_info.uniqueId))
-            self.music_attribute.append(MusicAttributeItem(id=song_info.id, uniqueId=song_info.uniqueId))
-            self.music_ai_section.append(MusicAISectionItem(id=song_info.id, uniqueId=song_info.uniqueId))
-            self.music_usbsetting.append(MusicUsbsettingItem(id=song_info.id, uniqueId=song_info.uniqueId))
+            indices = self.get_indices(song_info.id)
 
         languages = [
             ('japaneseText', 'japaneseFontType'),

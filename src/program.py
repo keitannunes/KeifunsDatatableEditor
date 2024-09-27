@@ -845,6 +845,7 @@ class Program:
                                  onpu_num=data.onpu_num,
                                  fuusen_total=data.fuusen_total,
                                  renda_time=data.renda_time,
+                                 music_ai_section=[5 if l > 100 else 3 for l in data.length],
                                  songFileName=f'sound/song_{new_id}'
                                  )
         
@@ -940,6 +941,7 @@ class Program:
         self.song_info.onpu_num[4] = data.onpu_num[4]
         self.song_info.fuusen_total[4] = data.fuusen_total[4]
         self.song_info.renda_time[4] = data.renda_time[4]
+        self.song_info.music_ai_section[4] = self.song_info.music_ai_section[3]
         self.songid_entry.delete(0, tk.END)
         self.songid_entry.insert(0, song_id)
         self.current_songid = song_id

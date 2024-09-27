@@ -524,6 +524,7 @@ class SongData:
     title: str = ""
     sub: str = ""
     star: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
+    length: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     shinuti: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     shinuti_score: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
     onpu_num: List[int] = field(default_factory=lambda: [0, 0, 0, 0, 0])
@@ -556,10 +557,11 @@ def parse_and_get_data(tja_file: str) -> SongData:
     ret.demo_start = float(parsed['headers']['demostart'])
     ret.title = parsed['headers']['title']
     sub = parsed['headers']['subtitle']
-    ret.sub = sub[2::] if sub.startswith('--') else sub 
+    ret.sub = sub[2::] if sub.startswith('--') else sub
     for i in parsed['courses'].keys():
         ret.star[i] = parsed['courses'][i]['headers']['level']
         stats = get_statistics(convert_to_timed(parsed['courses'][i]))
+        ret.length[i] = stats['length']
         ret.onpu_num[i] = stats['totalCombo']
         ret.fuusen_total[i] = sum(x[1] for x in stats['balloons'])
         impoppable_balloon_s = 0.0 #BTD reference???
@@ -601,4 +603,4 @@ def parse_and_get_data(tja_file: str) -> SongData:
         
     
 if __name__ == '__main__':
-    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\poxeiDOON.tja'))
+    print(parse_and_get_data('C:\\Users\\knunes\\Downloads\\はいよろこんで.tja'))
